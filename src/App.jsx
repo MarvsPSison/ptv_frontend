@@ -1,25 +1,21 @@
+import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./app/pages/Login";
+import InternDash from "./app/pages/InternDash";
+import AdminLog from "./app/pages/AdminLog";
 import Dashboard from "./app/pages/Dashboard";
-import { useState } from "react";
+import "./App.css";
 
-function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
+export default function App() {
   return (
     <Router>
       <Routes>
-        <Route
-          path="/"
-          element={isLoggedIn ? <Navigate to="/dashboard" /> : <Login setIsLoggedIn={setIsLoggedIn} />}
-        />
-        <Route
-          path="/dashboard"
-          element={isLoggedIn ? <Dashboard /> : <Navigate to="/" />}
-        />
+        <Route path="/" element={<Login />} />
+        <Route path="/intern-dash" element={<InternDash />} />
+        <Route path="/admin-log" element={<AdminLog />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
   );
 }
-
-export default App;
