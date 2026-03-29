@@ -1,0 +1,131 @@
+.adm-tab-overview { display: flex; flex-direction: column; gap: 24px; }
+
+.adm-ov-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.adm-ov-card  {
+  border-radius: var(--adm-radius); padding: 20px 18px;
+  display: flex; flex-direction: column; gap: 6px;
+  position: relative; overflow: hidden;
+  transition: transform var(--adm-transition), box-shadow var(--adm-transition);
+}
+.adm-ov-card:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,.15); }
+.adm-ov-card::after {
+  content: ''; position: absolute; top: -20px; right: -20px;
+  width: 80px; height: 80px; border-radius: 50%;
+  background: rgba(255,255,255,.12); pointer-events: none;
+}
+.adm-ov-card-blue   { background: linear-gradient(135deg, #0d1b4b, #162060); }
+.adm-ov-card-gold   { background: linear-gradient(135deg, #c9a94e, #a8872e); }
+.adm-ov-card-crimson { background: linear-gradient(135deg, #9b1c31, #c0293f); }
+.adm-ov-card-green  { background: linear-gradient(135deg, #15803d, #16a34a); }
+.adm-ov-card-top    { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 4px; }
+.adm-ov-card-label  { font-size: 10px; font-weight: 700; letter-spacing: .7px; text-transform: uppercase; color: rgba(255,255,255,.8); }
+.adm-ov-card-icon   { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 10px; background: rgba(0,0,0,.25); color: #fff; flex-shrink: 0; }
+.adm-ov-card-value  { font-size: 34px; font-weight: 800; color: #fff; line-height: 1; }
+.adm-ov-card-sub    { font-size: 11px; color: rgba(255,255,255,.75); margin-top: 4px; }
+
+/* Pending */
+.adm-ov-pending { border-left: 3px solid #f59e0b; }
+.adm-ov-pending-header { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+.adm-ov-pending-icon   { color: #f59e0b; flex-shrink: 0; }
+.adm-ov-pending-list   { display: flex; flex-direction: column; gap: 10px; }
+.adm-ov-pending-row    {
+  display: flex; align-items: center; gap: 16px;
+  padding: 12px 16px; border-radius: var(--adm-radius-sm);
+  background: var(--adm-off-white); border: 1px solid var(--adm-border);
+  flex-wrap: wrap;
+}
+.adm-ov-pending-info  { flex: 1; min-width: 0; }
+.adm-ov-pending-name  { font-size: 14px; font-weight: 700; color: var(--adm-text-main); }
+.adm-ov-pending-meta  { font-size: 12px; color: var(--adm-text-muted); margin-top: 2px; }
+.adm-ov-pending-date  { font-size: 12px; color: var(--adm-text-muted); white-space: nowrap; }
+
+/* Table */
+.adm-ov-table-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+.adm-ov-table-wrap   { overflow-x: auto; }
+.adm-ov-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.adm-ov-table th {
+  text-align: left; padding: 0 12px 10px;
+  font-size: 11px; color: var(--adm-text-muted);
+  text-transform: uppercase; letter-spacing: .4px;
+  border-bottom: 1.5px solid var(--adm-border);
+}
+.adm-ov-table td { padding: 13px 12px; border-bottom: 1px solid var(--adm-off-white); vertical-align: middle; }
+.adm-ov-table tr:last-child td { border-bottom: none; }
+
+.adm-ov-intern-cell  { display: flex; align-items: center; gap: 10px; }
+.adm-ov-avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--adm-navy), var(--adm-crimson));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 800; color: #fff;
+  flex-shrink: 0; overflow: hidden;
+}
+.adm-ov-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.adm-ov-intern-name   { font-size: 13px; font-weight: 700; color: var(--adm-text-main); }
+.adm-ov-intern-school { font-size: 11px; color: var(--adm-text-muted); margin-top: 1px; }
+
+.adm-ov-dept-tag {
+  display: inline-block; padding: 3px 10px;
+  background: #eff6ff; color: #1d4ed8;
+  border-radius: 20px; font-size: 11px; font-weight: 600;
+}
+.adm-ov-progress-wrap { display: flex; align-items: center; gap: 8px; min-width: 120px; }
+.adm-ov-progress-bar  { flex: 1; height: 6px; background: var(--adm-border); border-radius: 6px; overflow: hidden; }
+.adm-ov-progress-fill { height: 100%; background: linear-gradient(90deg, var(--adm-navy), var(--adm-gold)); border-radius: 6px; transition: width .6s ease; }
+.adm-ov-progress-pct  { font-size: 11px; font-weight: 700; color: var(--adm-text-muted); white-space: nowrap; }
+
+.adm-ov-hrs       { font-size: 13px; font-weight: 700; color: var(--adm-text-main); }
+.adm-ov-hrs-total { font-size: 11px; font-weight: 400; color: var(--adm-text-muted); }
+.adm-ov-count     { font-size: 13px; font-weight: 700; color: var(--adm-text-main); }
+
+/* Activity */
+.adm-ov-activity-list { display: flex; flex-direction: column; }
+.adm-ov-activity-row  {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 11px 0; border-bottom: 1px solid var(--adm-off-white); gap: 12px;
+}
+.adm-ov-activity-row:last-child { border-bottom: none; }
+.adm-ov-activity-left  { display: flex; flex-direction: column; gap: 2px; }
+.adm-ov-activity-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.adm-ov-activity-name  { font-size: 13px; font-weight: 700; color: var(--adm-text-main); }
+.adm-ov-activity-date  { font-size: 11px; color: var(--adm-text-muted); }
+.adm-ov-activity-time  { font-size: 12px; color: var(--adm-text-muted); }
+
+.adm-ov-status-badge {
+  display: inline-block; padding: 3px 10px;
+  border-radius: 20px; font-size: 11px; font-weight: 700; white-space: nowrap;
+}
+.adm-ov-status-on-time  { background: #052e16; color: #86efac; }
+.adm-ov-status-late     { background: #1c1408; color: #fde68a; }
+.adm-ov-status-half-day { background: #1c1408; color: #fb923c; }
+.adm-ov-status-absent   { background: #1c0a0e; color: #fca5a5; }
+.adm-ov-status-holiday  { background: #0c1a3a; color: #60a5fa; }
+
+/* Dark Mode */
+.adm-dark .adm-ov-pending      { border-left-color: #f59e0b; }
+.adm-dark .adm-ov-pending-row  { background: #0d1424; border-color: #1e2d6b; }
+.adm-dark .adm-ov-pending-name { color: #e8eaf2; }
+.adm-dark .adm-ov-pending-meta { color: #8892b0; }
+.adm-dark .adm-ov-pending-date { color: #8892b0; }
+.adm-dark .adm-ov-table th     { color: #8892b0; border-bottom-color: #1e2d6b; }
+.adm-dark .adm-ov-table td     { border-bottom-color: #1a2340; }
+.adm-dark .adm-ov-intern-name  { color: #e8eaf2; }
+.adm-dark .adm-ov-intern-school { color: #8892b0; }
+.adm-dark .adm-ov-dept-tag     { background: #0c1a3a; color: #60a5fa; }
+.adm-dark .adm-ov-progress-bar { background: #1e2d6b; }
+.adm-dark .adm-ov-progress-pct { color: #8892b0; }
+.adm-dark .adm-ov-hrs          { color: #e8eaf2; }
+.adm-dark .adm-ov-hrs-total    { color: #8892b0; }
+.adm-dark .adm-ov-count        { color: #e8eaf2; }
+.adm-dark .adm-ov-activity-row { border-bottom-color: #1a2340; }
+.adm-dark .adm-ov-activity-name { color: #e8eaf2; }
+.adm-dark .adm-ov-activity-date { color: #8892b0; }
+.adm-dark .adm-ov-activity-time { color: #8892b0; }
+.adm-dark .adm-ov-status-on-time  { background: #052e16; color: #86efac; }
+.adm-dark .adm-ov-status-late     { background: #1c1408; color: #fde68a; }
+.adm-dark .adm-ov-status-half-day { background: #1c1408; color: #fb923c; }
+.adm-dark .adm-ov-status-absent   { background: #1c0a0e; color: #fca5a5; }
+.adm-dark .adm-ov-status-holiday  { background: #0c1a3a; color: #60a5fa; }
+
+@media (max-width: 1024px) { .adm-ov-cards { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 600px)  { .adm-ov-cards { grid-template-columns: 1fr 1fr; gap: 10px; } }

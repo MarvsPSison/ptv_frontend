@@ -1,0 +1,57 @@
+.ids-tab-profile { display: flex; flex-direction: column; gap: 24px; }
+
+.ids-profile-hero {
+  background: linear-gradient(135deg, var(--navy), var(--navy-soft));
+  border-radius: var(--radius); padding: 32px;
+  display: flex; align-items: center; gap: 28px; flex-wrap: wrap;
+  position: relative; overflow: hidden;
+}
+.ids-profile-hero::before { content: ''; position: absolute; right: -40px; top: -40px; width: 200px; height: 200px; background: radial-gradient(circle, rgba(201,169,78,.15) 0%, transparent 70%); pointer-events: none; }
+
+.ids-profile-photo-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.ids-profile-photo { width: 90px; height: 90px; border-radius: 50%; background: linear-gradient(135deg, var(--crimson), var(--gold)); display: flex; align-items: center; justify-content: center; overflow: hidden; border: 3px solid rgba(255,255,255,.25); box-shadow: 0 4px 16px rgba(0,0,0,.3); }
+.ids-profile-photo img { width: 100%; height: 100%; object-fit: cover; }
+
+.ids-change-photo-btn { display: flex; align-items: center; gap: 5px; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25); color: var(--white); font-size: 12px; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-family: var(--font-main); transition: background var(--transition); }
+.ids-change-photo-btn:hover { background: rgba(255,255,255,.2); }
+
+.ids-profile-headline     { flex: 1; color: var(--white); }
+.ids-profile-headline h2  { font-family: var(--font-disp); font-size: 24px; margin-bottom: 4px; }
+.ids-profile-headline p   { font-size: 14px; opacity: .7; margin-bottom: 10px; }
+.ids-dept-tag { display: inline-block; background: rgba(201,169,78,.2); border: 1px solid rgba(201,169,78,.4); color: var(--gold-lt); font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 20px; letter-spacing: .3px; }
+
+.ids-profile-actions { margin-left: auto; display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-start; }
+.ids-btn-edit, .ids-btn-save, .ids-btn-cancel { display: flex; align-items: center; gap: 6px; padding: 10px 20px; border-radius: var(--radius-sm); font-family: var(--font-main); font-size: 13px; font-weight: 700; cursor: pointer; transition: all var(--transition); border: none; }
+.ids-btn-edit   { background: rgba(255,255,255,.12); color: var(--white); border: 1px solid rgba(255,255,255,.25); }
+.ids-btn-edit:hover   { background: rgba(255,255,255,.22); }
+.ids-btn-save   { background: var(--gold); color: var(--navy); }
+.ids-btn-save:hover   { background: var(--gold-lt); }
+.ids-btn-cancel { background: rgba(255,255,255,.08); color: rgba(255,255,255,.7); border: 1px solid rgba(255,255,255,.15); }
+
+.ids-profile-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.ids-edit-fields   { display: flex; flex-direction: column; gap: 16px; }
+
+/* Dark mode */
+.ids-dark .ids-profile-headline h2 { color: #e8eaf2; }
+.ids-dark .ids-profile-headline p  { color: rgba(232,234,242,.6); }
+.ids-dark .ids-profile-schedule-box--green { background: #052e16; border-color: #166534; }
+.ids-dark .ids-psb-title { color: #86efac; }
+.ids-dark .ids-psb-line  { color: #bbf7d0; }
+
+@media (max-width: 900px) {
+  .ids-profile-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .ids-profile-hero    { flex-direction: column; text-align: center; }
+  .ids-profile-actions { margin-left: 0; }
+}
+.ids-dark .ids-psb-stat-val   { color: #86efac; }
+.ids-dark .ids-psb-stat-label { color: #4ade80; }
+.ids-dark .ids-psb-divider    { background: #166534; }
+.ids-field-label-locked { display: flex; align-items: center; gap: 8px; }
+.ids-field-admin-tag { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; background: #fef3c7; color: #92400e; letter-spacing: .3px; }
+.ids-field-locked { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); background: var(--off-white); color: var(--text-muted); font-size: 14px; cursor: not-allowed; opacity: 0.7; text-decoration: line-through; }
+.ids-field-locked-icon { font-size: 13px; }
+
+.ids-dark .ids-field-admin-tag { background: #1c1408; color: #fde68a; }
+.ids-dark .ids-field-locked { background: #0d1424; border-color: #1e2d6b; color: #4a5568; }

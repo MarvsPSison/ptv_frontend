@@ -1,0 +1,138 @@
+.adm-tab-attendance { display: flex; flex-direction: column; gap: 24px; }
+
+.adm-att-selector { padding: 20px 24px; }
+.adm-att-intern-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.adm-att-intern-tab {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 16px; border-radius: 20px;
+  font-size: 13px; font-weight: 700;
+  border: 1.5px solid var(--adm-border);
+  background: var(--adm-off-white);
+  color: var(--adm-text-muted);
+  cursor: pointer; font-family: var(--adm-font);
+  transition: all var(--adm-transition);
+}
+.adm-att-intern-tab:hover { border-color: var(--adm-navy); color: var(--adm-navy); }
+.adm-att-intern-tab.active { background: var(--adm-navy); color: #fff; border-color: var(--adm-navy); }
+
+.adm-att-cal-panel { padding: 24px; }
+.adm-att-cal-topbar {
+  display: flex; align-items: flex-start;
+  justify-content: space-between; gap: 12px;
+  margin-bottom: 20px; flex-wrap: wrap;
+}
+.adm-att-month-nav {
+  display: flex; align-items: center;
+  justify-content: center; gap: 16px;
+  margin-bottom: 16px;
+}
+.adm-att-month-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 1.5px solid var(--adm-border);
+  background: var(--adm-off-white);
+  color: var(--adm-navy); cursor: pointer;
+  transition: all var(--adm-transition);
+}
+.adm-att-month-btn:hover { background: var(--adm-navy); color: #fff; border-color: var(--adm-navy); }
+.adm-att-month-label { font-size: 15px; font-weight: 700; color: var(--adm-navy); min-width: 160px; text-align: center; }
+
+.adm-att-cal-grid {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px;
+}
+.adm-att-cal-dow {
+  text-align: center; font-size: 11px; font-weight: 700;
+  color: var(--adm-text-muted); text-transform: uppercase;
+  letter-spacing: .5px; padding: 6px 0;
+}
+.adm-att-cal-empty { min-height: 70px; }
+.adm-att-cal-cell {
+  min-height: 70px; border-radius: 10px; padding: 8px;
+  display: flex; flex-direction: column; gap: 3px;
+  border: 1.5px solid var(--adm-border);
+  background: var(--adm-off-white);
+  transition: all .15s ease;
+}
+.adm-att-cal-cell:hover:not(.adm-att-cal-weekend) { border-color: var(--adm-navy); transform: translateY(-1px); }
+.adm-att-cal-weekend { opacity: .35; pointer-events: none; }
+.adm-att-cal-day    { font-size: 13px; font-weight: 700; color: var(--adm-text-main); }
+.adm-att-cal-status { font-size: 9px; color: var(--adm-text-muted); font-weight: 600; }
+.adm-att-cal-flag   { font-size: 11px; color: #f59e0b; }
+
+.adm-att-cal-today   { background: #eff6ff; border-color: #93c5fd; }
+.adm-att-cal-today .adm-att-cal-day { color: #1d4ed8; }
+.adm-att-cal-worked  { background: #f0fdf4; border-color: #86efac; }
+.adm-att-cal-worked .adm-att-cal-day { color: #15803d; }
+.adm-att-cal-late    { background: #fefce8; border-color: #fde047; }
+.adm-att-cal-late .adm-att-cal-day { color: #92400e; }
+.adm-att-cal-halfday { background: #fff7ed; border-color: #fed7aa; }
+.adm-att-cal-halfday .adm-att-cal-day { color: #c2410c; }
+.adm-att-cal-absent  { background: #fef2f2; border-color: #fca5a5; }
+.adm-att-cal-absent .adm-att-cal-day { color: #9b1c31; }
+.adm-att-cal-holiday { background: #eff6ff; border-color: #93c5fd; }
+.adm-att-cal-na .adm-att-cal-day { color: var(--adm-text-sm); }
+
+.adm-att-legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; }
+.adm-att-legend span { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--adm-text-muted); }
+.adm-att-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
+.adm-dot-green  { background: #22c55e; }
+.adm-dot-yellow { background: #f59e0b; }
+.adm-dot-red    { background: #ef4444; }
+.adm-dot-blue   { background: #60a5fa; }
+
+.adm-att-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.adm-att-table th {
+  text-align: left; padding: 0 10px 10px;
+  font-size: 11px; color: var(--adm-text-muted);
+  text-transform: uppercase; letter-spacing: .4px;
+  border-bottom: 1.5px solid var(--adm-border);
+}
+.adm-att-table td { padding: 11px 10px; border-bottom: 1px solid var(--adm-off-white); vertical-align: middle; }
+.adm-att-table tr:last-child td { border-bottom: none; }
+.adm-att-row-flagged { background: #fffbeb; }
+
+.adm-att-date-cell { display: flex; flex-direction: column; gap: 2px; }
+.adm-att-dow       { font-size: 11px; color: var(--adm-text-sm); }
+.adm-att-note      { font-size: 12px; color: var(--adm-text-muted); max-width: 120px; }
+.adm-att-flagged-badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 700; background: #fef3c7; color: #92400e; }
+.adm-att-admin-note    { font-size: 11px; color: #92400e; margin-top: 3px; }
+
+.adm-att-status-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+.adm-att-status-ontime  { background: #dcfce7; color: #15803d; }
+.adm-att-status-late    { background: #fefce8; color: #92400e; }
+.adm-att-status-halfday { background: #fff7ed; color: #c2410c; }
+.adm-att-status-absent  { background: #fff1f2; color: #9b1c31; }
+.adm-att-status-holiday { background: #eff6ff; color: #1d4ed8; }
+
+.adm-att-edit-modal { max-width: 480px !important; text-align: left !important; padding: 28px !important; }
+.adm-att-edit-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.adm-modal-close-btn { background: none; border: none; cursor: pointer; color: var(--adm-text-muted); padding: 4px; border-radius: 6px; transition: all .18s; display: flex; align-items: center; }
+.adm-modal-close-btn:hover { background: var(--adm-off-white); color: var(--adm-navy); }
+
+/* Dark Mode */
+.adm-dark .adm-att-intern-tab { background: #1a2340; border-color: #1e2d6b; color: #8892b0; }
+.adm-dark .adm-att-intern-tab:hover { border-color: #c9a94e; color: #c9a94e; }
+.adm-dark .adm-att-intern-tab.active { background: var(--adm-gold); color: var(--adm-navy); border-color: var(--adm-gold); }
+.adm-dark .adm-att-month-label { color: #e8eaf2; }
+.adm-dark .adm-att-month-btn   { background: #1a2340; border-color: #1e2d6b; color: #e8eaf2; }
+.adm-dark .adm-att-month-btn:hover { background: var(--adm-gold); color: var(--adm-navy); }
+.adm-dark .adm-att-cal-cell    { background: #0d1424; border-color: #1e2d6b; }
+.adm-dark .adm-att-cal-day     { color: #e8eaf2; }
+.adm-dark .adm-att-cal-worked  { background: #052e16; border-color: #166534; }
+.adm-dark .adm-att-cal-worked .adm-att-cal-day { color: #86efac; }
+.adm-dark .adm-att-cal-late    { background: #1c1408; border-color: #92400e; }
+.adm-dark .adm-att-cal-late .adm-att-cal-day { color: #fde047; }
+.adm-dark .adm-att-cal-absent  { background: #1c0a0e; border-color: #9b1c31; }
+.adm-dark .adm-att-cal-absent .adm-att-cal-day { color: #fca5a5; }
+.adm-dark .adm-att-table th    { color: #8892b0; border-bottom-color: #1e2d6b; }
+.adm-dark .adm-att-table td    { border-bottom-color: #1a2340; color: #e8eaf2; }
+.adm-dark .adm-att-row-flagged { background: #1c1408; }
+.adm-dark .adm-att-dow         { color: #4a5568; }
+.adm-dark .adm-att-flagged-badge { background: #1c1408; color: #fde68a; }
+.adm-dark .adm-att-admin-note  { color: #fde68a; }
+.adm-dark .adm-att-status-ontime  { background: #052e16; color: #86efac; }
+.adm-dark .adm-att-status-late    { background: #1c1408; color: #fde68a; }
+.adm-dark .adm-att-status-halfday { background: #1c1408; color: #fb923c; }
+.adm-dark .adm-att-status-absent  { background: #1c0a0e; color: #fca5a5; }
+.adm-dark .adm-att-status-holiday { background: #0c1a3a; color: #60a5fa; }
+.adm-dark input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(1); }

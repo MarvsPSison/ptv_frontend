@@ -1,15 +1,17 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import ptvLogo from "/src/assets/ptv-logo.png";
 import {
-  LayoutDashboard, ClipboardList, User, LogOut,
-  Clock, Target, BarChart2, CheckCircle2,
-  Bell, MapPin, ChevronRight, Menu, Upload,
-  FileText, Trash2, CalendarDays, Pencil, Save,
-  XCircle, X, Camera, Building2, GraduationCap,
-  Phone, Mail, BookOpen
+  LayoutDashboard, ClipboardList, User, LogOut, Menu,
+  CalendarCheck, LogIn, LogOut as LogOutIcon,
+  Save, XCircle, X, FileText, CheckCircle2, Timer
 } from "lucide-react";
 import "./InternDash.css";
+import DashboardTab from "./InternDashTab";
+import AttendanceTab from "./InternAttend";
+import ReportingTab from "./InternReport";
+import ProfileTab from "./InternProfile";
 
-// ── Default empty intern state ──────────────────────────────
 const EMPTY_INTERN = {
   name: "", school: "", course: "", department: "",
   supervisor: "", startDate: "", endDate: "",
@@ -17,83 +19,243 @@ const EMPTY_INTERN = {
   email: "", phone: "", address: "", photo: null,
 };
 
-// ── Calculates completion percentage ────────────────────────
 const pct = (r, t) => (!r || !t) ? 0 : Math.min(100, Math.round((r / t) * 100));
+
+const formatTime = (date) => date.toLocaleTimeString("en-PH", { hour: "2-digit", minute: "2-digit", hour12: true });
+
+const formatDuration = (ms) => {
+  if (!ms || ms <= 0) return "—";
+  const totalMins = Math.floor(ms / 60000);
+  const hrs = Math.floor(totalMins / 60);
+  const mins = totalMins % 60;
+  if (hrs === 0) return `${mins}m`;
+  return mins === 0 ? `${hrs}h` : `${hrs}h ${mins}m`;
+};
+
+const todayStr = () => new Date().toISOString().split("T")[0];
+
+const PH_HOLIDAYS = new Set([
+  "2025-01-01","2025-01-29","2025-04-01","2025-04-09","2025-04-17",
+  "2025-04-18","2025-04-19","2025-05-01","2025-06-12","2025-08-21",
+  "2025-08-25","2025-09-05","2025-11-01","2025-11-02","2025-11-30",
+  "2025-12-08","2025-12-24","2025-12-25","2025-12-30","2025-12-31",
+  "2026-01-01","2026-02-17","2026-04-02","2026-04-03","2026-04-04",
+  "2026-04-09","2026-05-01","2026-06-12","2026-08-21","2026-08-31",
+  "2026-11-01","2026-11-02","2026-11-30","2026-12-08","2026-12-24",
+  "2026-12-25","2026-12-30","2026-12-31",
+]);
+
+const countWorkingDays = (startStr, endStr) => {
+  if (!startStr || !endStr) return 0;
+  const start = new Date(startStr + "T00:00:00");
+  const end   = new Date(endStr   + "T00:00:00");
+  if (end < start) return 0;
+  let count = 0;
+  const cur = new Date(start);
+  while (cur <= end) {
+    const day = cur.getDay();
+    const str = cur.toISOString().split("T")[0];
+    if (day !== 0 && day !== 6 && !PH_HOLIDAYS.has(str)) count++;
+    cur.setDate(cur.getDate() + 1);
+  }
+  return count;
+};
+
+const countRemainingWorkingDays = (endStr) => {
+  const todayDate = new Date(todayStr() + "T00:00:00");
+  const end       = new Date(endStr    + "T00:00:00");
+  if (end < todayDate) return 0;
+  let count = 0;
+  const cur = new Date(todayDate);
+  while (cur <= end) {
+    const day = cur.getDay();
+    const str = cur.toISOString().split("T")[0];
+    if (day !== 0 && day !== 6 && !PH_HOLIDAYS.has(str)) count++;
+    cur.setDate(cur.getDate() + 1);
+  }
+  return count;
+};
 
 export default function InternDash() {
 
-  // ── State ──────────────────────────────────────────────────
-  const [activeTab, setActiveTab]     = useState("dashboard");
-  const [intern, setIntern]           = useState(EMPTY_INTERN);       // saved profile
-  const [editMode, setEditMode]       = useState(false);              // profile edit toggle
-  const [editForm, setEditForm]       = useState({ ...EMPTY_INTERN }); // unsaved edits buffer
-  const [reports, setReports]         = useState([]);                 // submitted reports list
-  const [reportForm, setReportForm]   = useState({ date: "", type: "daily", description: "", files: [] });
-  const [submitSuccess, setSubmitSuccess] = useState(false);          // success toast trigger
-  const [sidebarOpen, setSidebarOpen] = useState(false);              // mobile sidebar toggle
-  const [modal, setModal]             = useState(null);               // active modal: { type, id?, file? }
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab]   = useState("dashboard");
+  const [intern, setIntern]         = useState(EMPTY_INTERN);
+  const [editMode, setEditMode]     = useState(false);
+  const [editForm, setEditForm]     = useState({ ...EMPTY_INTERN });
+  const [reports, setReports]       = useState([]);
+  const [reportForm, setReportForm] = useState({ date: "", type: "daily", description: "", files: [] });
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [modal, setModal]           = useState(null);
+  const [darkMode, setDarkMode]     = useState(false);
 
-  // ── Refs ───────────────────────────────────────────────────
-  const fileInputRef  = useRef(); // hidden file input for report attachments
-  const photoInputRef = useRef(); // hidden file input for profile photo
+  const [attendanceLog, setAttendanceLog] = useState([]);
+  const [attNote, setAttNote]             = useState("");
+  const [liveTime, setLiveTime]           = useState(new Date());
+  const [attFilter, setAttFilter]         = useState("all");
 
-  // ── Derived values ─────────────────────────────────────────
-  const progress   = pct(Number(intern.renderedHours), Number(intern.requiredHours));
-  const hasProfile = intern.name.trim() !== "";
+  const [retroForm, setRetroForm]     = useState({ date: "", timeInRaw: "", timeInPeriod: "AM", timeOutRaw: "", timeOutPeriod: "PM", note: "" });
+  const [retroError, setRetroError]   = useState("");
+  const [retroSuccess, setRetroSuccess] = useState(false);
 
-  // ── Sidebar nav items ──────────────────────────────────────
+  useState(() => {
+    const id = setInterval(() => setLiveTime(new Date()), 1000);
+    return () => clearInterval(id);
+  });
+
+  // ── Derived values ──────────────────────────────────────
+  const autoRenderedHrs = attendanceLog
+    .filter(r => r.timeOut)
+    .reduce((acc, r) => acc + (r.timeOutMs - r.timeInMs - (parseInt(r.breakMins) || 0) * 60000) / 3600000, 0);
+  const autoRenderedHrsDisplay = Math.floor(autoRenderedHrs);
+  const progress     = pct(autoRenderedHrs, Number(intern.requiredHours));
+  const hrsRemaining = intern.requiredHours
+    ? Math.max(0, Number(intern.requiredHours) - autoRenderedHrs).toFixed(1)
+    : null;
+
+  const totalWorkingDays     = countWorkingDays(intern.startDate, intern.endDate);
+  const remainingWorkingDays = intern.endDate ? countRemainingWorkingDays(intern.endDate) : 0;
+  const hrsPerDay            = totalWorkingDays > 0 && intern.requiredHours
+    ? (Number(intern.requiredHours) / totalWorkingDays).toFixed(1) : null;
+
+  const existingToday = attendanceLog.find(r => r.date === todayStr());
+  const isTimedIn     = existingToday && !existingToday.timeOut;
+  const isTimedOut    = existingToday && existingToday.timeOut;
+
+  const totalAttDays  = attendanceLog.filter(r => r.timeOut).length;
+  const totalAttHours = attendanceLog.reduce((acc, r) => {
+    if (!r.timeOut) return acc;
+    return acc + (r.timeOutMs - r.timeInMs - (parseInt(r.breakMins) || 0) * 60000) / 3600000;
+  }, 0);
+  const onTimeCount = attendanceLog.filter(r => r.status === "On Time").length;
+  const lateCount   = attendanceLog.filter(r => r.status === "Late").length;
+
+  const filteredLog = attendanceLog.filter(r => {
+    if (attFilter === "all") return true;
+    const rDate = new Date(r.date);
+    const now   = new Date();
+    if (attFilter === "week") {
+      const weekAgo = new Date(now); weekAgo.setDate(now.getDate() - 7);
+      return rDate >= weekAgo;
+    }
+    if (attFilter === "month") {
+      return rDate.getMonth() === now.getMonth() && rDate.getFullYear() === now.getFullYear();
+    }
+    return true;
+  });
+
   const navItems = [
-    { key: "dashboard", Icon: LayoutDashboard, label: "Dashboard" },
-    { key: "reporting", Icon: ClipboardList,   label: "Reporting" },
-    { key: "profile",   Icon: User,            label: "Profile" },
+    { key: "dashboard",  Icon: LayoutDashboard, label: "Dashboard"  },
+    { key: "attendance", Icon: CalendarCheck,   label: "Attendance" },
+    { key: "reporting",  Icon: ClipboardList,   label: "Reporting"  },
+    { key: "profile",    Icon: User,            label: "Profile"    },
   ];
 
-  // ── Submits a new report to the list ──────────────────────
+  // ── Handlers ────────────────────────────────────────────
+  const handleTimeIn = () => {
+    const now    = new Date();
+    const cutoff = new Date(now); cutoff.setHours(8, 30, 0, 0);
+    const status = now > cutoff ? "Late" : "On Time";
+    const record = {
+      id: Date.now(), date: todayStr(),
+      dayLabel: now.toLocaleDateString("en-PH", { weekday: "long", month: "long", day: "numeric", year: "numeric" }),
+      timeIn: formatTime(now), timeInMs: now.getTime(),
+      timeOut: null, timeOutMs: null, duration: null,
+      status, note: attNote.trim(),
+    };
+    setAttendanceLog(prev => [record, ...prev.filter(r => r.date !== todayStr())]);
+    setAttNote("");
+    setModal(null);
+  };
+
+  const handleTimeOut = () => {
+    const now = new Date();
+    setAttendanceLog(prev => prev.map(r => {
+      if (r.date !== todayStr()) return r;
+      const durationMs = now.getTime() - r.timeInMs;
+      const hrs = durationMs / 3600000;
+      return {
+        ...r,
+        timeOut: formatTime(now), timeOutMs: now.getTime(),
+        duration: formatDuration(durationMs),
+        status: hrs < 4 ? "Half Day" : r.status,
+      };
+    }));
+    setModal(null);
+  };
+
   const handleReportSubmit = () => {
-    setReports(prev => [{
+    const newReport = {
       id: Date.now(),
-      ...reportForm,
-      submittedAt: new Date().toLocaleDateString("en-PH")
-    }, ...prev]);
+      date: reportForm.date,
+      type: reportForm.type,
+      description: reportForm.description,
+      files: reportForm.files,
+      submittedAt: new Date().toLocaleDateString("en-PH"),
+    };
+    setReports(prev => [newReport, ...prev]);
     setReportForm({ date: "", type: "daily", description: "", files: [] });
     setSubmitSuccess(true);
     setTimeout(() => setSubmitSuccess(false), 3000);
   };
 
-  // ── Adds selected files with object URLs to the report form
-  const handleFileChange = (e) => {
-    const chosen = Array.from(e.target.files).map(f => ({
-      name: f.name, size: f.size, url: URL.createObjectURL(f),
-    }));
-    setReportForm(prev => ({ ...prev, files: [...prev.files, ...chosen] }));
+  const parseTypedTime = (raw, period) => {
+    const cleaned = (raw || "").trim();
+    if (!cleaned) return null;
+    const parts = cleaned.includes(":") ? cleaned.split(":") : [cleaned, "0"];
+    let h = parseInt(parts[0], 10);
+    const m = parseInt(parts[1] ?? "0", 10);
+    if (isNaN(h) || isNaN(m) || h < 1 || h > 12 || m < 0 || m > 59) return null;
+    if (period === "AM") { if (h === 12) h = 0; }
+    else                 { if (h !== 12) h += 12; }
+    return [h, m];
   };
 
-  // ── Removes a file from the report form by index ──────────
-  const removeFile = (idx) =>
-    setReportForm(prev => ({ ...prev, files: prev.files.filter((_, i) => i !== idx) }));
-
-  // ── Sets profile photo preview in edit buffer ──────────────
-  const handlePhotoChange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    setEditForm(prev => ({ ...prev, photo: URL.createObjectURL(file) }));
+  const handleRetroLog = () => {
+    setRetroError("");
+    const { date, timeInRaw, timeInPeriod, timeOutRaw, timeOutPeriod, note } = retroForm;
+    if (!date || !timeInRaw || !timeOutRaw) { setRetroError("Please fill in date, time in, and time out."); return; }
+    if (date > todayStr()) { setRetroError("You cannot log a future date."); return; }
+    if (attendanceLog.find(r => r.date === date)) { setRetroError("An attendance record for this date already exists."); return; }
+    const parsedIn  = parseTypedTime(timeInRaw,  timeInPeriod);
+    const parsedOut = parseTypedTime(timeOutRaw, timeOutPeriod);
+    if (!parsedIn)  { setRetroError("Invalid Time In. Use format like 8:00 or 8."); return; }
+    if (!parsedOut) { setRetroError("Invalid Time Out. Use format like 5:00 or 5."); return; }
+    const baseDate  = new Date(date + "T00:00:00");
+    const timeInMs  = new Date(baseDate).setHours(parsedIn[0],  parsedIn[1],  0, 0);
+    const timeOutMs = new Date(baseDate).setHours(parsedOut[0], parsedOut[1], 0, 0);
+    if (timeOutMs <= timeInMs) { setRetroError("Time Out must be after Time In."); return; }
+    const durationMs = timeOutMs - timeInMs;
+    const hrs        = durationMs / 3600000;
+    const cutoff     = new Date(baseDate).setHours(8, 30, 0, 0);
+    const status     = timeInMs > cutoff ? "Late" : hrs < 4 ? "Half Day" : "On Time";
+    const record = {
+      id: Date.now(), date,
+      dayLabel: new Date(date + "T00:00:00").toLocaleDateString("en-PH", { weekday: "long", month: "long", day: "numeric", year: "numeric" }),
+      timeIn:  new Date(timeInMs).toLocaleTimeString("en-PH",  { hour: "2-digit", minute: "2-digit", hour12: true }),
+      timeInMs,
+      timeOut: new Date(timeOutMs).toLocaleTimeString("en-PH", { hour: "2-digit", minute: "2-digit", hour12: true }),
+      timeOutMs,
+      duration: formatDuration(durationMs),
+      status, note: note.trim(), isRetro: true,
+    };
+    setAttendanceLog(prev => [record, ...prev].sort((a, b) => b.date.localeCompare(a.date)));
+    setRetroForm({ date: "", timeInRaw: "", timeInPeriod: "AM", timeOutRaw: "", timeOutPeriod: "PM", note: "" });
+    setRetroSuccess(true);
+    setTimeout(() => setRetroSuccess(false), 3000);
   };
 
-  // ── Commits edit buffer to saved profile ──────────────────
   const saveProfile = () => { setIntern({ ...editForm }); setEditMode(false); };
 
   return (
-    <div className="ids-root">
+    <div className={`ids-root${darkMode ? " ids-dark" : ""}`}>
 
-      {/* ═══════════════════════════════════════
-          SIDEBAR
-      ═══════════════════════════════════════ */}
+      {/* SIDEBAR */}
       <aside className={`ids-sidebar ${sidebarOpen ? "open" : ""}`}>
-
-        {/* Brand / Logo */}
         <div className="ids-sidebar-brand">
           <img
-            src="https://tse1.explicit.bing.net/th/id/OIP.RWCD2dvArfs-tDB_6C5DfgAAAA?rs=1&pid=ImgDetMain&o=7&rm=3"
+            src={ptvLogo}
             alt="PTV" className="ids-logo-img"
           />
           <div className="ids-brand-text">
@@ -102,7 +264,6 @@ export default function InternDash() {
           </div>
         </div>
 
-        {/* Intern quick-card — navigates to Profile on click */}
         <div className="ids-intern-card"
           onClick={() => { setActiveTab("profile"); setSidebarOpen(false); }}>
           <div className="ids-intern-avatar">
@@ -114,8 +275,8 @@ export default function InternDash() {
           </div>
         </div>
 
-        {/* Navigation */}
         <nav className="ids-nav">
+          <span className="ids-nav-section-label">MENU</span>
           {navItems.map(({ key, Icon, label }) => (
             <button key={key}
               className={`ids-nav-item ${activeTab === key ? "active" : ""}`}
@@ -127,28 +288,28 @@ export default function InternDash() {
           ))}
         </nav>
 
-        {/* Hours mini progress + sign out */}
         <div className="ids-sidebar-footer">
           <div className="ids-hours-mini">
             <span>
-              {intern.renderedHours && intern.requiredHours
-                ? `${intern.renderedHours} / ${intern.requiredHours} hrs`
-                : "No hours logged"}
+              {intern.requiredHours
+                ? `${autoRenderedHrsDisplay} / ${intern.requiredHours} hrs`
+                : "No hours set yet"}
             </span>
             <div className="ids-mini-bar">
               <div className="ids-mini-fill" style={{ width: `${progress}%` }} />
             </div>
+            {intern.requiredHours && (
+              <span style={{ fontSize: "10px", color: "rgba(255,255,255,.35)", marginTop: "4px", display: "block" }}>
+                {progress}% · {remainingWorkingDays > 0 ? `${remainingWorkingDays} days left` : "Internship ended"}
+              </span>
+            )}
           </div>
-          <button className="ids-logout-btn"><LogOut size={14} /> Sign Out</button>
+          <button className="ids-logout-btn" onClick={() => setModal({ type: "signOut" })}><LogOut size={14} /> Sign Out</button>
         </div>
       </aside>
 
-      {/* ═══════════════════════════════════════
-          MAIN CONTENT AREA
-      ═══════════════════════════════════════ */}
+      {/* MAIN */}
       <div className="ids-main">
-
-        {/* Top bar */}
         <header className="ids-topbar">
           <button className="ids-hamburger" onClick={() => setSidebarOpen(v => !v)}>
             <Menu size={20} />
@@ -157,458 +318,110 @@ export default function InternDash() {
             {navItems.find(n => n.key === activeTab)?.label}
           </div>
           <div className="ids-topbar-right">
-            <span className="ids-topbar-date">
-              {new Date().toLocaleDateString("en-PH", { weekday: "short", month: "short", day: "numeric" })}
-            </span>
+            <button className="ids-theme-toggle" onClick={() => setDarkMode(v => !v)}>
+              {darkMode ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                  <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                </svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                </svg>
+              )}
+              {darkMode ? "Light" : "Dark"}
+            </button>
           </div>
         </header>
 
         <div className="ids-content">
-
-          {/* ═══════════════════════════════════
-              TAB: DASHBOARD
-          ═══════════════════════════════════ */}
           {activeTab === "dashboard" && (
-            <div className="ids-tab-dashboard">
-
-              {/* Stat cards — show "—" if no data yet */}
-              <div className="ids-stats-grid">
-                {[
-                  { Icon: Clock,        value: intern.renderedHours || "—", label: "Hours Rendered",   accent: "accent-blue"  },
-                  { Icon: Target,       value: intern.renderedHours && intern.requiredHours ? Number(intern.requiredHours) - Number(intern.renderedHours) : "—", label: "Hours Remaining", accent: "accent-red" },
-                  { Icon: BarChart2,    value: intern.requiredHours ? `${progress}%` : "—",             label: "Completion",      accent: "accent-gold"  },
-                  { Icon: CheckCircle2, value: reports.length,                                          label: "Reports Submitted", accent: "accent-green" },
-                ].map((s, i) => (
-                  <div key={i} className={`ids-stat-card ${s.accent}`}>
-                    <div className="ids-stat-icon-wrap"><s.Icon size={20} /></div>
-                    <div>
-                      <p className="ids-stat-value">{s.value}</p>
-                      <p className="ids-stat-label">{s.label}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Internship progress bar */}
-              <div className="ids-progress-section">
-                <div className="ids-progress-header">
-                  <span>Internship Progress</span>
-                  <span>{progress}%</span>
-                </div>
-                <div className="ids-progress-track">
-                  <div className="ids-progress-fill" style={{ width: `${progress}%` }}>
-                    <span className="ids-progress-glow" />
-                  </div>
-                </div>
-                <div className="ids-progress-meta">
-                  <span>{intern.startDate ? `Started ${intern.startDate}` : "Start date not set"}</span>
-                  <span>{intern.endDate   ? `Ends ${intern.endDate}`     : "End date not set"}</span>
-                </div>
-              </div>
-
-              {/* Two-column: recent submissions + placement details */}
-              <div className="ids-two-col">
-
-                {/* Recent submissions preview (max 5 rows) */}
-                <div className="ids-panel">
-                  <h3 className="ids-panel-title">Recent Submissions</h3>
-                  {reports.length === 0 ? (
-                    <div className="ids-empty-state">
-                      <FileText size={28} />
-                      <p>No reports submitted yet.</p>
-                    </div>
-                  ) : (
-                    <table className="ids-log-table">
-                      <thead>
-                        <tr><th>Date</th><th>Type</th><th>Description</th></tr>
-                      </thead>
-                      <tbody>
-                        {reports.slice(0, 5).map((r, i) => (
-                          <tr key={i}>
-                            <td>{r.date}</td>
-                            <td><span className="ids-report-type">{r.type}</span></td>
-                            <td style={{ maxWidth: "180px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                              {r.description}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                </div>
-
-                {/* Placement details — hidden until profile is set up */}
-                <div className="ids-panel">
-                  <h3 className="ids-panel-title">Placement Details</h3>
-                  {!hasProfile ? (
-                    <div className="ids-empty-state">
-                      <User size={28} />
-                      <p>Set up your profile to see placement details.</p>
-                    </div>
-                  ) : (
-                    <div className="ids-info-list">
-                      {[
-                        { label: "Department", val: intern.department },
-                        { label: "Supervisor", val: intern.supervisor },
-                        { label: "School",     val: intern.school },
-                        { label: "Course",     val: intern.course },
-                        { label: "Start Date", val: intern.startDate },
-                        { label: "End Date",   val: intern.endDate },
-                      ].map(({ label, val }) => (
-                        <div key={label} className="ids-info-row">
-                          <span>{label}</span>
-                          <strong>{val || "—"}</strong>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+            <DashboardTab
+              intern={intern} reports={reports} attendanceLog={attendanceLog}
+              liveTime={liveTime} autoRenderedHrs={autoRenderedHrs}
+              autoRenderedHrsDisplay={autoRenderedHrsDisplay} progress={progress}
+              hrsRemaining={hrsRemaining} totalWorkingDays={totalWorkingDays}
+              remainingWorkingDays={remainingWorkingDays} hrsPerDay={hrsPerDay}
+              totalAttDays={totalAttDays} totalAttHours={totalAttHours}
+              existingToday={existingToday} isTimedIn={isTimedIn} isTimedOut={isTimedOut}
+              setActiveTab={setActiveTab} setModal={setModal}
+            />
           )}
-
-          {/* ═══════════════════════════════════
-              TAB: REPORTING
-          ═══════════════════════════════════ */}
+          {activeTab === "attendance" && (
+            <AttendanceTab
+              attendanceLog={attendanceLog} setAttendanceLog={setAttendanceLog}
+              liveTime={liveTime} existingToday={existingToday}
+              isTimedIn={isTimedIn} isTimedOut={isTimedOut}
+              totalAttDays={totalAttDays} totalAttHours={totalAttHours}
+              onTimeCount={onTimeCount} lateCount={lateCount}
+              attFilter={attFilter} setAttFilter={setAttFilter}
+              filteredLog={filteredLog} retroForm={retroForm}
+              setRetroForm={setRetroForm} retroError={retroError}
+              retroSuccess={retroSuccess} handleRetroLog={handleRetroLog}
+              totalWorkingDays={totalWorkingDays}
+            />
+          )}
           {activeTab === "reporting" && (
-            <div className="ids-tab-reporting">
-
-              <div className="ids-section-header">
-                <h2>Submit a Report</h2>
-                <p>Attach your Daily Time Record, narrative reports, or any supporting documents.</p>
-              </div>
-
-              {/* Success toast after submission */}
-              {submitSuccess && (
-                <div className="ids-success-toast">✓ Report submitted successfully!</div>
-              )}
-
-              {/* Report submission form */}
-              <form className="ids-report-form" onSubmit={e => e.preventDefault()}>
-
-                <div className="ids-form-row">
-                  <div className="ids-field">
-                    <label>Report Date</label>
-                    <input type="date" value={reportForm.date}
-                      onChange={e => setReportForm(p => ({ ...p, date: e.target.value }))} required />
-                  </div>
-                  <div className="ids-field">
-                    <label>Report Type</label>
-                    <select value={reportForm.type}
-                      onChange={e => setReportForm(p => ({ ...p, type: e.target.value }))}>
-                      <option value="daily">Daily Time Record (DTR)</option>
-                      <option value="weekly">Weekly Narrative Report</option>
-                      <option value="monthly">Monthly Summary</option>
-                      <option value="incident">Incident Report</option>
-                      <option value="other">Other</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="ids-field">
-                  <label>Description / Narrative</label>
-                  <textarea rows={5}
-                    placeholder="Describe the tasks completed, learnings, observations..."
-                    value={reportForm.description}
-                    onChange={e => setReportForm(p => ({ ...p, description: e.target.value }))}
-                    required />
-                </div>
-
-                {/* File drop zone — supports click and drag & drop */}
-                <div className="ids-dropzone"
-                  onClick={() => fileInputRef.current.click()}
-                  onDragOver={e => e.preventDefault()}
-                  onDrop={e => {
-                    e.preventDefault();
-                    const dropped = Array.from(e.dataTransfer.files).map(f => ({
-                      name: f.name, size: f.size, url: URL.createObjectURL(f),
-                    }));
-                    setReportForm(p => ({ ...p, files: [...p.files, ...dropped] }));
-                  }}>
-                  <Upload size={28} className="ids-dropzone-icon" />
-                  <p>Drag & drop files here, or <span>click to browse</span></p>
-                  <p className="ids-dropzone-hint">Supports PDF, JPG, PNG, DOCX – up to 10MB each</p>
-                  <input ref={fileInputRef} type="file" multiple
-                    accept=".pdf,.jpg,.jpeg,.png,.docx"
-                    style={{ display: "none" }} onChange={handleFileChange} />
-                </div>
-
-                {/* Attached files list with remove button */}
-                {reportForm.files.length > 0 && (
-                  <div className="ids-file-list">
-                    {reportForm.files.map((f, i) => (
-                      <div key={i} className="ids-file-chip">
-                        <FileText size={13} />
-                        <span className="ids-file-name">{f.name}</span>
-                        <span className="ids-file-size">({(f.size / 1024).toFixed(1)} KB)</span>
-                        <button type="button" className="ids-file-remove" onClick={() => removeFile(i)}>
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Opens submit confirmation modal */}
-                <button type="button" className="ids-submit-btn" onClick={() => {
-                  if (!reportForm.date || !reportForm.description) return;
-                  setModal({ type: "submit" });
-                }}>
-                  <Save size={14} /> Submit Report
-                </button>
-              </form>
-
-              {/* Submission history list */}
-              {reports.length > 0 && (
-                <div className="ids-panel ids-reports-history">
-                  <h3 className="ids-panel-title">Submission History</h3>
-                  {reports.map(r => (
-                    <div key={r.id} className="ids-report-item">
-
-                      {/* Report header: type tag, date, unsubmit button */}
-                      <div className="ids-report-meta">
-                        <span className="ids-report-type">{r.type.toUpperCase()}</span>
-                        <span className="ids-report-date">{r.date} · Submitted {r.submittedAt}</span>
-                        <div className="ids-report-actions">
-                          <button className="ids-report-unsubmit-btn"
-                            onClick={() => setModal({ type: "unsubmit", id: r.id })}>
-                            <XCircle size={12} /> Unsubmit
-                          </button>
-                        </div>
-                      </div>
-
-                      <p className="ids-report-desc">{r.description}</p>
-
-                      {/* Attached files — clicking opens attachment preview modal */}
-                      {r.files.length > 0 && (
-                        <div className="ids-report-files">
-                          {r.files.map((f, i) => (
-                            <span key={i} className="ids-report-file-tag"
-                              onClick={() => f.url && setModal({ type: "attachment", file: f })}>
-                              <FileText size={11} /> {f.name}
-                              {f.url && <span className="ids-file-view"> · View</span>}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            <ReportingTab
+              reports={reports} setReports={setReports}
+              reportForm={reportForm} setReportForm={setReportForm}
+              submitSuccess={submitSuccess} handleReportSubmit={handleReportSubmit}
+              setModal={setModal}
+            />
           )}
-
-          {/* ═══════════════════════════════════
-              TAB: PROFILE
-          ═══════════════════════════════════ */}
           {activeTab === "profile" && (
-            <div className="ids-tab-profile">
-
-              {/* Profile hero — photo, name, edit/save buttons */}
-              <div className="ids-profile-hero">
-                <div className="ids-profile-photo-wrap">
-                  <div className="ids-profile-photo">
-                    {(editMode ? editForm.photo : intern.photo)
-                      ? <img src={editMode ? editForm.photo : intern.photo} alt="Profile" />
-                      : <User size={32} />}
-                  </div>
-                  {/* Photo upload button — only visible in edit mode */}
-                  {editMode && (
-                    <>
-                      <button className="ids-change-photo-btn"
-                        onClick={() => photoInputRef.current.click()}>
-                        <Camera size={12} /> Change Photo
-                      </button>
-                      <input ref={photoInputRef} type="file" accept="image/*"
-                        style={{ display: "none" }} onChange={handlePhotoChange} />
-                    </>
-                  )}
-                </div>
-
-                <div className="ids-profile-headline">
-                  <h2>{intern.name || "Your Name"}</h2>
-                  <p>
-                    {intern.course || intern.school
-                      ? `${intern.course || ""}${intern.course && intern.school ? " · " : ""}${intern.school || ""}`
-                      : "Complete your profile below"}
-                  </p>
-                  {intern.department && (
-                    <span className="ids-dept-tag">{intern.department}</span>
-                  )}
-                </div>
-
-                {/* Edit / Save / Cancel actions */}
-                <div className="ids-profile-actions">
-                  {editMode ? (
-                    <>
-                      <button className="ids-btn-save" onClick={saveProfile}>Save Changes</button>
-                      <button className="ids-btn-cancel"
-                        onClick={() => { setEditMode(false); setEditForm({ ...intern }); }}>
-                        Cancel
-                      </button>
-                    </>
-                  ) : (
-                    <button className="ids-btn-edit"
-                      onClick={() => { setEditMode(true); setEditForm({ ...intern }); }}>
-                      <Pencil size={13} /> {hasProfile ? "Edit Profile" : "Set Up Profile"}
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <div className="ids-profile-grid">
-
-                {/* Personal Information panel */}
-                <div className="ids-panel">
-                  <h3 className="ids-panel-title">Personal Information</h3>
-                  {editMode ? (
-                    <div className="ids-edit-fields">
-                      {[
-                        { label: "Full Name", key: "name",    type: "text"  },
-                        { label: "Email",     key: "email",   type: "email" },
-                        { label: "Phone",     key: "phone",   type: "text"  },
-                        { label: "Address",   key: "address", type: "text"  },
-                      ].map(({ label, key, type }) => (
-                        <div key={key} className="ids-field">
-                          <label>{label}</label>
-                          <input type={type} value={editForm[key]}
-                            onChange={e => setEditForm(p => ({ ...p, [key]: e.target.value }))} />
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="ids-info-list">
-                      <div className="ids-info-row"><span>Email</span><strong>{intern.email}</strong></div>
-                      <div className="ids-info-row"><span>Phone</span><strong>{intern.phone}</strong></div>
-                      <div className="ids-info-row"><span>Address</span><strong>{intern.address}</strong></div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Academic & Placement panel */}
-                <div className="ids-panel">
-                  <h3 className="ids-panel-title">Academic & Placement</h3>
-                  {editMode ? (
-                    <div className="ids-edit-fields">
-                      {/* Editable by intern */}
-                      {[
-                        { label: "School / University", key: "school" },
-                        { label: "Course / Program",    key: "course" },
-                      ].map(({ label, key }) => (
-                        <div key={key} className="ids-field">
-                          <label>{label}</label>
-                          <input value={editForm[key]}
-                            onChange={e => setEditForm(p => ({ ...p, [key]: e.target.value }))} />
-                        </div>
-                      ))}
-                      {/* Department, supervisor, and date range */}
-                      {[
-                        { label: "Department", key: "department", type: "select" },
-                        { label: "Supervisor", key: "supervisor", type: "text" },
-                        { label: "Start Date", key: "startDate",  type: "date" },
-                        { label: "End Date",   key: "endDate",    type: "date" },
-                      ].map(({ label, key, type }) => (
-                        <div key={key} className="ids-field">
-                          <label>{label}</label>
-                          {type === "select" ? (
-                            <select value={editForm[key]}
-                              onChange={e => setEditForm(p => ({ ...p, [key]: e.target.value }))}>
-                              <option value="">Select department...</option>
-                              <option>Engineering Office</option>
-                              <option>TV Maintenance</option>
-                              <option>Studio Operations</option>
-                              <option>Technical Operations Center</option>
-                              <option>Uplink</option>
-                              <option>Information Technology</option>
-                              <option>Transmitter Section</option>
-                              <option>Microwave</option>
-                            </select>
-                          ) : (
-                            <input type={type} value={editForm[key]}
-                              placeholder={`Enter ${label.toLowerCase()}`}
-                              onChange={e => setEditForm(p => ({ ...p, [key]: e.target.value }))} />
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="ids-info-list">
-                      {[
-                        { label: "School",     val: intern.school },
-                        { label: "Course",     val: intern.course },
-                        { label: "Department", val: intern.department },
-                        { label: "Supervisor", val: intern.supervisor },
-                        { label: "Start Date", val: intern.startDate },
-                        { label: "End Date",   val: intern.endDate },
-                      ].map(({ label, val }) => (
-                        <div key={label} className="ids-info-row">
-                          <span>{label}</span>
-                          <strong>{val}</strong>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Hours Summary panel — edit fields only visible in edit mode */}
-                <div className="ids-panel ids-hours-panel">
-                  <h3 className="ids-panel-title">Hours Summary</h3>
-
-                  {/* Input fields for required/rendered hours in edit mode */}
-                  {editMode && (
-                    <div className="ids-form-row" style={{ marginBottom: "20px" }}>
-                      <div className="ids-field">
-                        <label>Required Hours</label>
-                        <input type="number" value={editForm.requiredHours} placeholder="e.g. 300"
-                          onChange={e => setEditForm(p => ({ ...p, requiredHours: e.target.value }))} />
-                      </div>
-                      <div className="ids-field">
-                        <label>Rendered Hours</label>
-                        <input type="number" value={editForm.renderedHours} placeholder="e.g. 120"
-                          onChange={e => setEditForm(p => ({ ...p, renderedHours: e.target.value }))} />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* SVG ring chart + hours breakdown */}
-                  <div className="ids-hours-big">
-                    <div className="ids-hours-ring">
-                      <svg viewBox="0 0 120 120">
-                        <circle cx="60" cy="60" r="50" className="ids-ring-bg" />
-                        <circle cx="60" cy="60" r="50" className="ids-ring-fill"
-                          strokeDasharray={`${progress * 3.14} 314`} />
-                      </svg>
-                      <div className="ids-ring-label">
-                        <strong>{progress}%</strong>
-                        <span>Done</span>
-                      </div>
-                    </div>
-                    <div className="ids-hours-details">
-                      <div className="ids-h-row"><span>Required</span><b>{intern.requiredHours} hrs</b></div>
-                      <div className="ids-h-row"><span>Rendered</span><b>{intern.renderedHours} hrs</b></div>
-                      <div className="ids-h-row"><span>Remaining</span><b>{intern.requiredHours - intern.renderedHours} hrs</b></div>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-            </div>
+            <ProfileTab
+              intern={intern} editMode={editMode} setEditMode={setEditMode}
+              editForm={editForm} setEditForm={setEditForm}
+              saveProfile={saveProfile}
+            />
           )}
-
         </div>
       </div>
 
-      {/* Mobile sidebar backdrop */}
       {sidebarOpen && <div className="ids-overlay" onClick={() => setSidebarOpen(false)} />}
 
-      {/* ═══════════════════════════════════════
-          MODALS
-      ═══════════════════════════════════════ */}
+      {/* MODALS */}
       {modal && (
         <div className="ids-modal-backdrop" onClick={() => setModal(null)}>
           <div className="ids-modal" onClick={e => e.stopPropagation()}>
 
-            {/* Submit confirmation modal */}
+            {modal.type === "timeIn" && (
+              <>
+                <div className="ids-modal-icon ids-modal-icon-blue"><LogIn size={22} /></div>
+                <h3>Clock In</h3>
+                <p>You're about to clock in for <strong>{new Date().toLocaleDateString("en-PH", { weekday: "long", month: "long", day: "numeric" })}</strong> at <strong>{formatTime(new Date())}</strong>.</p>
+                <div className="ids-field" style={{ textAlign: "left", marginBottom: "20px" }}>
+                  <label style={{ fontSize: "12px", fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".4px" }}>Note (optional)</label>
+                  <input type="text" placeholder="e.g. Working on UI redesign..."
+                    value={attNote} onChange={e => setAttNote(e.target.value)}
+                    style={{ padding: "10px 14px", border: "1.5px solid #e2e6f0", borderRadius: "8px", fontFamily: "inherit", fontSize: "14px", outline: "none" }} />
+                </div>
+                <div className="ids-modal-actions">
+                  <button className="ids-modal-cancel" onClick={() => setModal(null)}>Cancel</button>
+                  <button className="ids-modal-confirm ids-modal-confirm-blue" onClick={handleTimeIn}>
+                    <LogIn size={14} /> Clock In
+                  </button>
+                </div>
+              </>
+            )}
+
+            {modal.type === "timeOut" && (
+              <>
+                <div className="ids-modal-icon ids-modal-icon-red"><LogOutIcon size={22} /></div>
+                <h3>Clock Out</h3>
+                <p>You're about to clock out at <strong>{formatTime(new Date())}</strong>. Time elapsed: <strong>{formatDuration(new Date() - existingToday?.timeInMs)}</strong>.</p>
+                <div className="ids-modal-actions">
+                  <button className="ids-modal-cancel" onClick={() => setModal(null)}>Cancel</button>
+                  <button className="ids-modal-confirm ids-modal-confirm-red" onClick={handleTimeOut}>
+                    <LogOutIcon size={14} /> Clock Out
+                  </button>
+                </div>
+              </>
+            )}
+
             {modal.type === "submit" && (
               <>
                 <div className="ids-modal-icon ids-modal-icon-blue"><Save size={22} /></div>
@@ -619,8 +432,7 @@ export default function InternDash() {
                     <XCircle size={14} /> Cancel
                   </button>
                   <button className="ids-modal-confirm ids-modal-confirm-blue" onClick={() => {
-                    handleReportSubmit();
-                    setModal(null);
+                    handleReportSubmit(); setModal(null);
                   }}>
                     <Save size={14} /> Yes, Submit
                   </button>
@@ -628,7 +440,6 @@ export default function InternDash() {
               </>
             )}
 
-            {/* Unsubmit confirmation modal — restores data back into the form */}
             {modal.type === "unsubmit" && (
               <>
                 <div className="ids-modal-icon ids-modal-icon-red"><XCircle size={22} /></div>
@@ -639,14 +450,7 @@ export default function InternDash() {
                   <button className="ids-modal-confirm ids-modal-confirm-red" onClick={() => {
                     const report = reports.find(x => x.id === modal.id);
                     setReports(prev => prev.filter(x => x.id !== modal.id));
-                    // Restore report data back into the form for re-editing
-                    setReportForm({
-                      date: report.date,
-                      type: report.type,
-                      description: report.description,
-                      files: report.files,
-                    });
-                    setActiveTab("reporting");
+                    setReportForm({ date: report.date, type: report.type, description: report.description, files: report.files });
                     setModal(null);
                   }}>
                     <XCircle size={14} /> Yes, Unsubmit
@@ -655,9 +459,32 @@ export default function InternDash() {
               </>
             )}
 
-            {/* Attachment preview modal — supports image, PDF, or download fallback */}
-            {modal.type === "attachment" && (
+            {modal.type === "signOut" && (
               <>
+                <div className="ids-modal-icon ids-modal-icon-red"><LogOut size={22} /></div>
+                <h3>Sign Out</h3>
+                <p>Are you sure you want to sign out? Your session data will be cleared.</p>
+                <div className="ids-modal-actions">
+                  <button className="ids-modal-cancel" onClick={() => setModal(null)}>Cancel</button>
+                  <button className="ids-modal-confirm ids-modal-confirm-red" onClick={() => {
+                    setIntern(EMPTY_INTERN);
+                    setEditForm({ ...EMPTY_INTERN });
+                    setReports([]);
+                    setReportForm({ date: "", type: "daily", description: "", files: [] });
+                    setAttendanceLog([]);
+                    setAttNote("");
+                    setActiveTab("dashboard");
+                    setModal(null);
+                    navigate("/");
+                  }}>
+                    <LogOut size={14} /> Yes, Sign Out
+                  </button>
+                </div>
+              </>
+            )}
+
+            {modal.type === "attachment" && (
+            <>
                 <div className="ids-modal-attachment-header">
                   <div className="ids-modal-icon ids-modal-icon-blue" style={{ margin: "0" }}>
                     <FileText size={20} />
@@ -668,12 +495,8 @@ export default function InternDash() {
                       {(modal.file.size / 1024).toFixed(1)} KB
                     </p>
                   </div>
-                  <button className="ids-modal-close" onClick={() => setModal(null)}>
-                    <X size={18} />
-                  </button>
+                  <button className="ids-modal-close" onClick={() => setModal(null)}><X size={18} /></button>
                 </div>
-
-                {/* Preview area: image, PDF iframe, or unsupported fallback */}
                 <div className="ids-modal-preview">
                   {modal.file.name.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
                     <img src={modal.file.url} alt={modal.file.name} className="ids-preview-img" />
@@ -683,13 +506,10 @@ export default function InternDash() {
                     <div className="ids-preview-unsupported">
                       <FileText size={40} />
                       <p>Preview not available for this file type.</p>
-                      <a href={modal.file.url} download={modal.file.name} className="ids-preview-download">
-                        Download File
-                      </a>
+                      <a href={modal.file.url} download={modal.file.name} className="ids-preview-download">Download File</a>
                     </div>
                   )}
                 </div>
-
                 <div className="ids-modal-actions" style={{ marginTop: "16px" }}>
                   <button className="ids-modal-cancel" onClick={() => setModal(null)}>Close</button>
                   <a href={modal.file.url} download={modal.file.name}
