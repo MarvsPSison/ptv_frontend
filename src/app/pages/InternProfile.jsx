@@ -1,11 +1,12 @@
-import { useRef } from "react";
-import { User, Camera, Pencil } from "lucide-react";
+import { useRef, useState } from "react";
+import { User, Camera, Pencil, CheckCircle } from "lucide-react";
 import "./InternProfile.css";
 
 export default function ProfileTab({
   intern, editMode, setEditMode, editForm, setEditForm, saveProfile,
 }) {
   const photoInputRef = useRef();
+  const [confirmSave, setConfirmSave] = useState(false);
 
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
@@ -49,7 +50,7 @@ export default function ProfileTab({
         <div className="ids-profile-actions">
           {editMode ? (
             <>
-              <button className="ids-btn-save" onClick={saveProfile}>Save Changes</button>
+              <button className="ids-btn-save" onClick={() => setConfirmSave(true)}>Save Changes</button>
               <button className="ids-btn-cancel" onClick={() => { setEditMode(false); setEditForm({ ...intern }); }}>Cancel</button>
             </>
           ) : (
@@ -96,7 +97,6 @@ export default function ProfileTab({
             <div className="ids-edit-fields">
               {[
                 { label: "School / University", key: "school" },
-                { label: "Course / Program",    key: "course" },
               ].map(({ label, key }) => (
                 <div key={key} className="ids-field">
                   <label>{label}</label>
@@ -104,6 +104,175 @@ export default function ProfileTab({
                     onChange={e => setEditForm(p => ({ ...p, [key]: e.target.value }))} />
                 </div>
               ))}
+              <div className="ids-field">
+                <label>Course / Program</label>
+                <select value={editForm.course} onChange={e => setEditForm(p => ({ ...p, course: e.target.value }))}>
+                  <option value="">-- Select a Course --</option>
+
+                  <optgroup label="Business & Management">
+                    <option>BS Accountancy</option>
+                    <option>BS Accounting Information Systems</option>
+                    <option>BS Business Administration</option>
+                    <option>BS Business Administration major in Financial Management</option>
+                    <option>BS Business Administration major in Human Resource Management</option>
+                    <option>BS Business Administration major in Marketing Management</option>
+                    <option>BS Business Administration major in Operations Management</option>
+                    <option>BS Entrepreneurship</option>
+                    <option>BS Office Administration</option>
+                    <option>BS Public Administration</option>
+                  </optgroup>
+
+                  <optgroup label="Engineering & Technology">
+                    <option>BS Architecture</option>
+                    <option>BS Chemical Engineering</option>
+                    <option>BS Civil Engineering</option>
+                    <option>BS Computer Engineering</option>
+                    <option>BS Electrical Engineering</option>
+                    <option>BS Electronics Engineering</option>
+                    <option>BS Environmental Engineering</option>
+                    <option>BS Geodetic Engineering</option>
+                    <option>BS Industrial Engineering</option>
+                    <option>BS Mechanical Engineering</option>
+                    <option>BS Mechatronics Engineering</option>
+                    <option>BS Mining Engineering</option>
+                    <option>BS Petroleum Engineering</option>
+                    <option>BS Sanitary Engineering</option>
+                  </optgroup>
+
+                  <optgroup label="Information Technology & Computing">
+                    <option>BS Computer Science</option>
+                    <option>BS Information Systems</option>
+                    <option>BS Information Technology</option>
+                    <option>BS Data Science</option>
+                    <option>BS Cybersecurity</option>
+                    <option>BS Software Engineering</option>
+                    <option>Associate in Computer Technology</option>
+                  </optgroup>
+
+                  <optgroup label="Communication & Media">
+                    <option>AB Communication</option>
+                    <option>AB Journalism</option>
+                    <option>AB Broadcasting</option>
+                    <option>AB Film</option>
+                    <option>AB Media Studies</option>
+                    <option>BS Communication Research</option>
+                    <option>BS Digital Media Arts</option>
+                    <option>BS Multimedia Arts</option>
+                  </optgroup>
+
+                  <optgroup label="Social Sciences & Humanities">
+                    <option>AB Economics</option>
+                    <option>AB History</option>
+                    <option>AB Philosophy</option>
+                    <option>AB Political Science</option>
+                    <option>AB Psychology</option>
+                    <option>AB Sociology</option>
+                    <option>AB Anthropology</option>
+                    <option>AB Literature</option>
+                    <option>AB Linguistics</option>
+                    <option>AB International Studies</option>
+                    <option>BS Psychology</option>
+                    <option>BS Social Work</option>
+                  </optgroup>
+
+                  <optgroup label="Education">
+                    <option>Bachelor of Elementary Education</option>
+                    <option>Bachelor of Secondary Education major in English</option>
+                    <option>Bachelor of Secondary Education major in Filipino</option>
+                    <option>Bachelor of Secondary Education major in Mathematics</option>
+                    <option>Bachelor of Secondary Education major in Science</option>
+                    <option>Bachelor of Secondary Education major in Social Studies</option>
+                    <option>Bachelor of Special Needs Education</option>
+                    <option>Bachelor of Physical Education</option>
+                    <option>Bachelor of Early Childhood Education</option>
+                    <option>Bachelor of Technology and Livelihood Education</option>
+                    <option>Bachelor of Technical-Vocational Teacher Education</option>
+                  </optgroup>
+
+                  <optgroup label="Health & Medicine">
+                    <option>BS Biology</option>
+                    <option>BS Biochemistry</option>
+                    <option>BS Dentistry</option>
+                    <option>BS Medicine</option>
+                    <option>BS Medical Technology</option>
+                    <option>BS Midwifery</option>
+                    <option>BS Nursing</option>
+                    <option>BS Nutrition and Dietetics</option>
+                    <option>BS Occupational Therapy</option>
+                    <option>BS Pharmacy</option>
+                    <option>BS Physical Therapy</option>
+                    <option>BS Radiologic Technology</option>
+                    <option>BS Respiratory Therapy</option>
+                    <option>BS Speech-Language Pathology</option>
+                  </optgroup>
+
+                  <optgroup label="Science">
+                    <option>BS Applied Mathematics</option>
+                    <option>BS Applied Physics</option>
+                    <option>BS Astronomy</option>
+                    <option>BS Chemistry</option>
+                    <option>BS Environmental Science</option>
+                    <option>BS Forestry</option>
+                    <option>BS Geology</option>
+                    <option>BS Marine Biology</option>
+                    <option>BS Mathematics</option>
+                    <option>BS Meteorology</option>
+                    <option>BS Physics</option>
+                    <option>BS Statistics</option>
+                    <option>BS Zoology</option>
+                  </optgroup>
+
+                  <optgroup label="Agriculture & Fisheries">
+                    <option>BS Agriculture</option>
+                    <option>BS Agricultural Engineering</option>
+                    <option>BS Agribusiness</option>
+                    <option>BS Agricultural Technology</option>
+                    <option>BS Fisheries</option>
+                    <option>BS Food Technology</option>
+                    <option>BS Horticulture</option>
+                    <option>BS Veterinary Medicine</option>
+                  </optgroup>
+
+                  <optgroup label="Hospitality & Tourism">
+                    <option>BS Hospitality Management</option>
+                    <option>BS Hotel and Restaurant Management</option>
+                    <option>BS Tourism Management</option>
+                    <option>BS Culinary Arts</option>
+                  </optgroup>
+
+                  <optgroup label="Law & Criminology">
+                    <option>BS Criminology</option>
+                    <option>Bachelor of Laws (LLB)</option>
+                    <option>Juris Doctor</option>
+                  </optgroup>
+
+                  <optgroup label="Fine Arts & Design">
+                    <option>BS Fine Arts</option>
+                    <option>BS Graphic Design</option>
+                    <option>BS Industrial Design</option>
+                    <option>BS Interior Design</option>
+                    <option>BS Fashion Design and Merchandising</option>
+                  </optgroup>
+
+                  <optgroup label="Others">
+                    <option>AB Development Communication</option>
+                    <option>BS Library and Information Science</option>
+                    <option>BS Military Science</option>
+                    <option>BS Physical Education and Sports Science</option>
+                    <option>BS Real Estate Management</option>
+                    <option value="Other / Not Listed">Other / Not Listed</option>
+                  </optgroup>
+                </select>
+                {editForm.course === "Other / Not Listed" && (
+                  <input
+                    type="text"
+                    style={{ marginTop: "8px" }}
+                    placeholder="Please type your course/program"
+                    value={editForm.customCourse || ""}
+                    onChange={e => setEditForm(p => ({ ...p, customCourse: e.target.value }))}
+                  />
+                )}
+              </div>
               {[
                 { label: "Department",     key: "department",    type: "select" },
                 { label: "Supervisor",     key: "supervisor",    type: "text"   },
@@ -163,7 +332,7 @@ export default function ProfileTab({
             <div className="ids-info-list">
               {[
                 { label: "School",         val: intern.school },
-                { label: "Course",         val: intern.course },
+                { label: "Course", val: intern.course === "Other / Not Listed" ? intern.customCourse : intern.course },
                 { label: "Department",     val: intern.department },
                 { label: "Supervisor",     val: intern.supervisor },
                 { label: "Start Date",     val: intern.startDate },
@@ -194,6 +363,21 @@ export default function ProfileTab({
         </div>
 
       </div>
+    {confirmSave && (
+        <div className="ids-modal-overlay">
+          <div className="ids-modal-card">
+            <div className="ids-modal-icon">
+              <CheckCircle size={40} strokeWidth={1.5} />
+            </div>
+            <h3 className="ids-modal-title">Save Changes</h3>
+            <p className="ids-modal-desc">Are you sure you want to save your profile changes?</p>
+            <div className="ids-modal-actions">
+              <button className="ids-modal-btn-cancel" onClick={() => setConfirmSave(false)}>Cancel</button>
+              <button className="ids-modal-btn-confirm" onClick={() => { saveProfile(); setConfirmSave(false); }}>Confirm</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

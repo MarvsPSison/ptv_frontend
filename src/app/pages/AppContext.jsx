@@ -16,12 +16,27 @@ export function AppProvider({ children }) {
     try { return JSON.parse(localStorage.getItem("ptv_current_intern")) || null; } catch { return null; }
   });
   const [currentAdmin, setCurrentAdmin] = useState(null);
+  const DEFAULT_OICS = [
+  { id: 101, name: "Ricky Galeza",      department: "Transmitter",    username: "oic_transmitter", password: "Ptv@1234" },
+  { id: 102, name: "Darius Dela Cruz",  department: "TV Maintenance", username: "oic_tvmaint",     password: "Ptv@1234" },
+  { id: 103, name: "Joselito Tanggol",  department: "Uplink",         username: "oic_uplink",      password: "Ptv@1234" },
+  { id: 104, name: "Narciso Rodriguez", department: "TOC",            username: "oic_toc",         password: "Ptv@1234" },
+  { id: 105, name: "Aljune Urrutia",    department: "Studio",         username: "oic_studio",      password: "Ptv@1234" },
+  { id: 106, name: "Cyril Collao",      department: "IT",             username: "oic_it",          password: "Ptv@1234" },
+];
 
+const [oics, setOics] = useState(() => {
+  try {
+    const stored = JSON.parse(localStorage.getItem("ptv_oics"));
+    return stored && stored.length > 0 ? stored : DEFAULT_OICS;
+  } catch { return DEFAULT_OICS; }
+});
+  const [activeOIC, setActiveOIC] = useState(null);
   useEffect(() => { localStorage.setItem("ptv_interns",         JSON.stringify(interns));       }, [interns]);
   useEffect(() => { localStorage.setItem("ptv_attendance",      JSON.stringify(attendanceMap)); }, [attendanceMap]);
   useEffect(() => { localStorage.setItem("ptv_reports",         JSON.stringify(reportsMap));    }, [reportsMap]);
-  useEffect(() => { localStorage.setItem("ptv_current_intern",  JSON.stringify(currentIntern)); }, [currentIntern]);
-
+  useEffect(() => { localStorage.setItem("ptv_current_intern", JSON.stringify(currentIntern)); }, [currentIntern]);
+  useEffect(() => { localStorage.setItem("ptv_oics", JSON.stringify(oics)); }, [oics]);
   const registerIntern = (formData) => {
     const newIntern = {
       id: Date.now(),
@@ -163,6 +178,18 @@ export function AppProvider({ children }) {
   const signOutIntern = () => setCurrentIntern(null);
   const signOutAdmin  = () => setCurrentAdmin(null);
 
+  const addOIC = (data) => {
+    const newOIC = { id: Date.now(), ...data };
+    setOics(prev => [...prev, newOIC]);
+    return newOIC;
+  };
+  const updateOIC = (id, fields) => {
+    setOics(prev => prev.map(o => o.id === id ? { ...o, ...fields } : o));
+  };
+  const deleteOIC = (id) => {
+    setOics(prev => prev.filter(o => o.id !== id));
+  };
+
   const getInternAttendance = (internId) => attendanceMap[internId] || [];
   const getInternReports    = (internId) => reportsMap[internId]    || [];
 
@@ -203,6 +230,9 @@ export function AppProvider({ children }) {
       getInternAttendance,
       getInternReports,
       getRenderedHours,
+
+      oics, addOIC, updateOIC, deleteOIC,
+      activeOIC, setActiveOIC,
     }}>
       {children}
     </AppContext.Provider>

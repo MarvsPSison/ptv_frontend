@@ -11,8 +11,46 @@ const TYPE_CONFIG = {
   other:    { cls: "adm-rep-type-other",    label: "OTHER"    },
 };
 
-export default function AdminReports() {
-  const { interns, getInternReports, addAdminComment, setReportStatus } = useApp();
+export default function AdminReports({ activeOIC }) {
+  const { interns: realInterns, getInternReports: realGetReports, addAdminComment, setReportStatus } = useApp();
+
+const MOCK_INTERNS = [
+  { id: 1, name: "Maria Santos",    photo: null, status: "active",  department: "IT"             },
+  { id: 2, name: "Jose Reyes",      photo: null, status: "active",  department: "Transmitter"    },
+  { id: 3, name: "Ana Dela Cruz",   photo: null, status: "active",  department: "Studio"         },
+  { id: 4, name: "Carlo Mendoza",   photo: null, status: "active",  department: "TOC"            },
+  { id: 5, name: "Nina Villanueva", photo: null, status: "active",  department: "Uplink"         },
+  { id: 6, name: "Ramon Garcia",    photo: null, status: "active",  department: "TV Maintenance" },
+];
+const MOCK_REPORTS = {
+  1: [
+    { id: "r101", date: "2026-04-10", type: "daily", description: "Assisted in network configuration and server monitoring tasks.", status: "approved", submittedAt: "Apr 10, 05:10 PM", comments: [{ role: "admin", text: "Good work, keep it up!", time: "Apr 10, 10:30 AM" }] },
+    { id: "r102", date: "2026-04-09", type: "daily", description: "Performed software updates and documented system changes.",       status: "approved", submittedAt: "Apr 9, 05:05 PM",  comments: [] },
+    { id: "r103", date: "2026-04-08", type: "daily", description: "Troubleshot workstation issues and set up new employee accounts.", status: "pending",  submittedAt: "Apr 8, 05:00 PM",  comments: [] },
+  ],
+  2: [
+    { id: "r201", date: "2026-04-10", type: "daily", description: "Monitored transmitter signal levels and logged hourly readings.",   status: "approved", submittedAt: "Apr 10, 05:00 PM", comments: [{ role: "admin", text: "Readings look consistent.", time: "Apr 10, 11:00 AM" }] },
+    { id: "r202", date: "2026-04-09", type: "daily", description: "Assisted in routine transmitter maintenance and antenna cleaning.", status: "pending",  submittedAt: "Apr 9, 05:00 PM",  comments: [] },
+  ],
+  3: [
+    { id: "r301", date: "2026-04-10", type: "daily", description: "Assisted in studio setup for the evening news broadcast.",          status: "approved", submittedAt: "Apr 10, 05:15 PM", comments: [] },
+    { id: "r302", date: "2026-04-08", type: "daily", description: "Helped with lighting adjustments during production rehearsal.",     status: "pending",  submittedAt: "Apr 8, 05:00 PM",  comments: [] },
+  ],
+  4: [
+    { id: "r401", date: "2026-04-10", type: "daily", description: "Monitored TOC screens and reported anomalies to shift supervisor.", status: "approved", submittedAt: "Apr 10, 05:00 PM", comments: [] },
+  ],
+  5: [
+    { id: "r501", date: "2026-04-10", type: "daily", description: "Monitored uplink signal and assisted in dish alignment.",            status: "pending",  submittedAt: "Apr 10, 05:00 PM", comments: [] },
+    { id: "r502", date: "2026-04-09", type: "daily", description: "Logged satellite schedules and coordinated with TOC for live feeds.", status: "approved", submittedAt: "Apr 9, 05:00 PM",  comments: [{ role: "admin", text: "Great coordination with TOC.", time: "Apr 9, 03:00 PM" }] },
+  ],
+  6: [
+    { id: "r601", date: "2026-04-10", type: "daily", description: "Assisted in preventive maintenance of studio monitors.",            status: "approved", submittedAt: "Apr 10, 05:00 PM", comments: [] },
+  ],
+};
+
+const allInterns = realInterns.length > 0 ? realInterns : MOCK_INTERNS;
+const interns = activeOIC ? allInterns.filter(i => i.department === activeOIC.department) : allInterns;
+const getInternReports = (id) => realInterns.length > 0 ? realGetReports(id) : (MOCK_REPORTS[id] || []);
 
   const [selectedInternId, setSelectedInternId] = useState(interns[0]?.id ?? null);
   const [viewModal,  setViewModal]  = useState(null);
@@ -223,19 +261,21 @@ export default function AdminReports() {
               <span className={`adm-rep-status-badge adm-rep-status-${viewModal.status ?? "pending"}`}>
                 {viewModal.status ?? "Pending"}
               </span>
-              <button
-                className="adm-btn adm-btn-ghost"
-                style={{ fontSize: "12px", padding: "5px 12px", marginLeft: "auto" }}
-                onClick={() => {
-                  const newStatus = viewModal.status === "approved" ? "pending" : "approved";
-                  setReportStatus(selectedInternId, viewModal.id, newStatus);
-                  setViewModal(prev => ({ ...prev, status: newStatus }));
-                }}
-              >
-                {viewModal.status === "approved"
-                  ? <><XCircle size={12} /> Unapprove</>
-                  : <><CheckCircle size={12} /> Approve</>}
-              </button>
+              {!activeOIC && (
+                <button
+                  className="adm-btn adm-btn-ghost"
+                  style={{ fontSize: "12px", padding: "5px 12px", marginLeft: "auto" }}
+                  onClick={() => {
+                    const newStatus = viewModal.status === "approved" ? "pending" : "approved";
+                    setReportStatus(selectedInternId, viewModal.id, newStatus);
+                    setViewModal(prev => ({ ...prev, status: newStatus }));
+                  }}
+                >
+                  {viewModal.status === "approved"
+                    ? <><XCircle size={12} /> Unapprove</>
+                    : <><CheckCircle size={12} /> Approve</>}
+                </button>
+              )}
             </div>
 
             {/* Comments */}

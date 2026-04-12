@@ -30,38 +30,27 @@ const MONTH_NAMES = [
 ];
 
 const PH_HOLIDAYS = {
+  // 2026 — Regular Holidays (Proclamation No. 1006 + 1189)
   "2026-01-01": "New Year's Day",
-  "2026-02-17": "Chinese New Year",
+  "2026-03-20": "Eid'l Fitr",
   "2026-04-02": "Maundy Thursday",
   "2026-04-03": "Good Friday",
-  "2026-04-04": "Black Saturday",
   "2026-04-09": "Araw ng Kagitingan",
   "2026-05-01": "Labor Day",
   "2026-06-12": "Independence Day",
-  "2026-08-21": "Ninoy Aquino Day",
   "2026-08-31": "National Heroes Day",
-  "2026-11-01": "All Saints' Day",
-  "2026-11-02": "All Souls' Day",
   "2026-11-30": "Bonifacio Day",
-  "2026-12-08": "Immaculate Conception",
-  "2026-12-24": "Christmas Eve",
   "2026-12-25": "Christmas Day",
   "2026-12-30": "Rizal Day",
-  "2026-12-31": "New Year's Eve",
-  "2025-01-01": "New Year's Day",
-  "2025-04-17": "Maundy Thursday",
-  "2025-04-18": "Good Friday",
-  "2025-04-19": "Black Saturday",
-  "2025-04-09": "Araw ng Kagitingan",
-  "2025-05-01": "Labor Day",
-  "2025-06-12": "Independence Day",
-  "2025-08-21": "Ninoy Aquino Day",
-  "2025-08-25": "National Heroes Day",
-  "2025-11-01": "All Saints' Day",
-  "2025-11-30": "Bonifacio Day",
-  "2025-12-08": "Immaculate Conception",
-  "2025-12-25": "Christmas Day",
-  "2025-12-30": "Rizal Day",
+  // 2026 — Special Non-Working Days
+  "2026-02-17": "Chinese New Year",
+  "2026-04-04": "Black Saturday",
+  "2026-08-21": "Ninoy Aquino Day",
+  "2026-11-01": "All Saints' Day",
+  "2026-11-02": "All Souls' Day",
+  "2026-12-08": "Feast of the Immaculate Conception",
+  "2026-12-24": "Christmas Eve",
+  "2026-12-31": "Last Day of the Year",
 };
 
 export default function AttendanceTab({
@@ -229,6 +218,33 @@ export default function AttendanceTab({
     setEditModal(null);
   };
 
+  const [requestModal, setRequestModal] = useState(null);
+  const [requestReason, setRequestReason] = useState("");
+  const [requestSent, setRequestSent] = useState(false);
+
+  const openEditRequest = (dateStr, rec) => {
+    setRequestReason("");
+    setRequestSent(false);
+    setRequestModal({ dateStr, rec });
+  };
+
+  const [showRequestConfirm, setShowRequestConfirm] = useState(false);
+
+const submitEditRequest = () => {
+  if (!requestReason.trim()) return;
+  setShowRequestConfirm(true);
+};
+
+const confirmEditRequest = () => {
+  console.log("Edit request submitted:", {
+    date: requestModal.dateStr,
+    record: requestModal.rec,
+    reason: requestReason,
+  });
+  setShowRequestConfirm(false);
+  setRequestSent(true);
+};
+
   const monthRecords = useMemo(() => {
     return attendanceLog.filter(r => {
       const d = new Date(r.date + "T00:00:00");
@@ -293,10 +309,9 @@ export default function AttendanceTab({
   const getCellClass = (dateStr) => {
     const rec = logMap[dateStr];
     const dow = new Date(dateStr + "T00:00:00").getDay();
-    const isWeekend   = dow === 0 || dow === 6;
     const isPHHoliday = !!PH_HOLIDAYS[dateStr];
+    if (isPHHoliday) return "att-cal-holiday";
     if (rec) {
-      if (rec.status === "Holiday")  return "att-cal-holiday";
       if (rec.status === "Absent")   return "att-cal-absent";
       if (rec.status === "On Time")  return "att-cal-worked";
       if (rec.status === "Late")     return "att-cal-late";
@@ -304,7 +319,7 @@ export default function AttendanceTab({
       if (rec.timeIn && !rec.timeOut) return "att-cal-active";
     }
     if (dateStr === todayStr()) return "att-cal-today";
-    if (isWeekend || isPHHoliday)  return "att-cal-na";
+    if (dow === 0 || dow === 6) return "att-cal-na";
     return "att-cal-na";
   };
 
@@ -389,8 +404,17 @@ export default function AttendanceTab({
             return (
               <div key={dateStr}
                 className={`att-cal-cell ${getCellClass(dateStr)} ${future || dow === 0 || dow === 6 ? "att-cal-future" : ""} ${dow === 0 || dow === 6 ? "att-cal-weekend" : ""}`}
-                onClick={() => !future && dow !== 0 && dow !== 6 && openEdit(dateStr)}>
-                <span className="att-cal-day-num">{day}</span>
+                onClick={() => {
+                  if (future) return;
+                  if (dow === 0 || dow === 6) return;
+                  const rec = logMap[dateStr];
+                  if (rec && rec.timeIn && rec.timeOut) {
+                    openEditRequest(dateStr, rec);
+                    return;
+                  }
+                  openEdit(dateStr);
+                }}>
+                                <span className="att-cal-day-num">{day}</span>
                 <span className="att-cal-label">{getCellLabel(dateStr)}</span>
                 {rec?.timeIn && rec.status !== "Absent" && rec.status !== "Holiday" && (
                   <span className="att-cal-time">{rec.timeIn}</span>
@@ -429,7 +453,11 @@ export default function AttendanceTab({
               <tbody>
                 {filteredLog.map(r => (
                   <tr key={r.id} className={r.date === todayStr() ? "att-row-today" : ""}
-                    onClick={() => openEdit(r.date)} style={{ cursor: "pointer" }}>
+                    onClick={() => {
+                    if (r.timeIn && r.timeOut) { openEditRequest(r.date, r); return; }
+                    openEdit(r.date);
+                  }}
+                  style={{ cursor: "pointer" }}>
                     <td className="att-td-date">
                       <span>{r.date === todayStr() ? "Today" : new Date(r.date + "T00:00:00").toLocaleDateString("en-PH", { month: "short", day: "numeric" })}</span>
                       <span className="att-day-name">{new Date(r.date + "T00:00:00").toLocaleDateString("en-PH", { weekday: "short" })}</span>
@@ -518,8 +546,88 @@ export default function AttendanceTab({
             <div className="att-edit-modal-actions">
               <button className="ids-modal-cancel" onClick={() => setEditModal(null)}>Cancel</button>
               <button className="att-modal-absent-btn"  onClick={markAbsent}>Mark Absent</button>
-              <button className="att-modal-holiday-btn" onClick={markHoliday}>Mark as Holiday</button>
               <button className="att-modal-save-btn"    onClick={saveEdit}>Save Changes</button>
+            </div>
+          </div>
+        </div>
+     )}
+
+      {/* Edit Request Modal */}
+      {requestModal && (
+        <div className="ids-modal-backdrop" onClick={() => setRequestModal(null)}>
+          <div className="ids-modal att-edit-modal" onClick={e => e.stopPropagation()}>
+            <div className="att-edit-modal-header">
+              <div>
+                <h3>Request Edit</h3>
+                <p className="att-edit-modal-date">
+                  {new Date(requestModal.dateStr + "T00:00:00").toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}
+                </p>
+              </div>
+              <button className="ids-modal-close" onClick={() => setRequestModal(null)}>✕</button>
+            </div>
+
+            {requestSent ? (
+              <div style={{ textAlign: "center", padding: "24px 0" }}>
+                <div style={{ width: "56px", height: "56px", borderRadius: "50%", background: "var(--green-lt)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", color: "var(--green)" }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <p style={{ fontWeight: 700, color: "var(--navy)", marginBottom: "6px", fontSize: "16px" }}>Request Sent!</p>
+                <p style={{ fontSize: "13px", color: "var(--text-muted)" }}>
+                  Your edit request has been forwarded to the admin for approval.
+                </p>
+                <button className="att-modal-save-btn" style={{ marginTop: "20px" }} onClick={() => setRequestModal(null)}>Close</button>
+              </div>
+            ) : (
+              <>
+                <div style={{ background: "var(--off-white)", borderRadius: "8px", padding: "12px 16px", marginBottom: "16px", fontSize: "13px", color: "var(--text-muted)" }}>
+                  <strong style={{ color: "var(--navy)" }}>Recorded:</strong>&nbsp;
+                  {requestModal.rec?.timeIn} — {requestModal.rec?.timeOut}&nbsp;·&nbsp;
+                  <span className={`att-status-badge ${STATUS_CONFIG[requestModal.rec?.status]?.cls ?? ""}`}>{requestModal.rec?.status}</span>
+                </div>
+                <div className="ids-field">
+                  <label>Reason for edit request</label>
+                  <textarea rows={4} placeholder="Explain what needs to be corrected and why..."
+                    value={requestReason}
+                    onChange={e => setRequestReason(e.target.value)}
+                    style={{ padding: "10px 14px", border: "1.5px solid var(--border)", borderRadius: "var(--radius-sm)", fontFamily: "var(--font-main)", fontSize: "14px", outline: "none", resize: "vertical", background: "var(--surface)", color: "var(--text-main)", width: "100%" }} />
+                </div>
+                <div className="att-edit-modal-actions">
+                  <button className="ids-modal-cancel" onClick={() => setRequestModal(null)}>Cancel</button>
+                  <button className="att-modal-save-btn"
+                    onClick={submitEditRequest}
+                    disabled={!requestReason.trim()}
+                    style={{ opacity: requestReason.trim() ? 1 : 0.5 }}>
+                    Submit Request
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Submit Request Confirmation Modal */}
+      {showRequestConfirm && (
+        <div className="ids-modal-backdrop" onClick={() => setShowRequestConfirm(false)}>
+          <div className="ids-modal" onClick={e => e.stopPropagation()} style={{ textAlign: "left" }}>
+            <div className="att-edit-modal-header">
+              <div>
+                <h3>Confirm Submission</h3>
+                <p className="att-edit-modal-date">
+                  {requestModal && new Date(requestModal.dateStr + "T00:00:00").toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}
+                </p>
+              </div>
+              <button className="ids-modal-close" onClick={() => setShowRequestConfirm(false)}>✕</button>
+            </div>
+            <p style={{ fontSize: "13.5px", color: "var(--text-muted)", marginBottom: "20px", lineHeight: 1.6 }}>
+              Are you sure you want to submit this edit request? Your supervisor will be notified for approval.
+            </p>
+            <div style={{ background: "var(--off-white)", borderRadius: "8px", padding: "12px 16px", marginBottom: "20px", fontSize: "13px", color: "var(--text-muted)" }}>
+              <strong style={{ color: "var(--navy)" }}>Reason:</strong>&nbsp;{requestReason}
+            </div>
+            <div className="ids-modal-actions">
+              <button className="ids-modal-cancel" onClick={() => setShowRequestConfirm(false)}>Cancel</button>
+              <button className="att-modal-save-btn" onClick={confirmEditRequest}>Confirm & Submit</button>
             </div>
           </div>
         </div>

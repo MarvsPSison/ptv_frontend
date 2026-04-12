@@ -15,8 +15,50 @@ const STATUS_CONFIG = {
 };
 
 export default function AdminAttendance() {
-  const { interns, getInternAttendance, updateAttendanceRecord, flagAttendanceRecord } = useApp();
+  const { interns: realInterns, getInternAttendance: realGetAttendance, updateAttendanceRecord, flagAttendanceRecord } = useApp();
 
+const MOCK_INTERNS = [
+  { id: 1, name: "Maria Santos",    photo: null, status: "active", department: "IT",             supervisor: "Cyril Collao"      },
+  { id: 2, name: "Jose Reyes",      photo: null, status: "active", department: "Transmitter",    supervisor: "Ricky Galeza"      },
+  { id: 3, name: "Ana Dela Cruz",   photo: null, status: "active", department: "Studio",         supervisor: "Aljune Urrutia"    },
+  { id: 4, name: "Carlo Mendoza",   photo: null, status: "active", department: "TOC",            supervisor: "Narciso Rodriguez" },
+  { id: 5, name: "Nina Villanueva", photo: null, status: "active", department: "Uplink",         supervisor: "Joselito Tanggol"  },
+  { id: 6, name: "Ramon Garcia",    photo: null, status: "active", department: "TV Maintenance", supervisor: "Darius Dela Cruz"  },
+];
+const MOCK_ATTENDANCE = {
+  1: [
+    { id: "a101", date: "2026-04-10", timeIn: "08:02 AM", timeOut: "05:05 PM", timeInMs: 1744243320000, timeOutMs: 1744275900000, breakMins: "60", status: "On Time", duration: "8h 3m",  flagged: false, adminNote: "" },
+    { id: "a102", date: "2026-04-09", timeIn: "08:15 AM", timeOut: "05:00 PM", timeInMs: 1744156500000, timeOutMs: 1744189200000, breakMins: "60", status: "On Time", duration: "7h 45m", flagged: false, adminNote: "" },
+    { id: "a103", date: "2026-04-08", timeIn: "08:00 AM", timeOut: "05:10 PM", timeInMs: 1744070400000, timeOutMs: 1744103400000, breakMins: "60", status: "On Time", duration: "8h 10m", flagged: false, adminNote: "" },
+    { id: "a104", date: "2026-04-07", timeIn: "08:45 AM", timeOut: "05:00 PM", timeInMs: 1743990600000, timeOutMs: 1744016400000, breakMins: "60", status: "Late",    duration: "7h 15m", flagged: true,  adminNote: "Late arrival noted." },
+  ],
+  2: [
+    { id: "a201", date: "2026-04-10", timeIn: "08:00 AM", timeOut: "05:00 PM", timeInMs: 1744243200000, timeOutMs: 1744275600000, breakMins: "60", status: "On Time", duration: "8h",     flagged: false, adminNote: "" },
+    { id: "a202", date: "2026-04-09", timeIn: "08:10 AM", timeOut: "05:05 PM", timeInMs: 1744157400000, timeOutMs: 1744189500000, breakMins: "60", status: "On Time", duration: "7h 55m", flagged: false, adminNote: "" },
+    { id: "a203", date: "2026-04-08", timeIn: "08:05 AM", timeOut: "05:00 PM", timeInMs: 1744071300000, timeOutMs: 1744102800000, breakMins: "60", status: "On Time", duration: "7h 55m", flagged: false, adminNote: "" },
+  ],
+  3: [
+    { id: "a301", date: "2026-04-10", timeIn: "08:00 AM", timeOut: "05:00 PM", timeInMs: 1744243200000, timeOutMs: 1744275600000, breakMins: "60", status: "On Time", duration: "8h",     flagged: false, adminNote: "" },
+    { id: "a302", date: "2026-04-09", timeIn: "09:05 AM", timeOut: "05:00 PM", timeInMs: 1744160700000, timeOutMs: 1744189200000, breakMins: "60", status: "Late",    duration: "6h 55m", flagged: true,  adminNote: "Arrived 1 hour late." },
+    { id: "a303", date: "2026-04-07", timeIn: "08:00 AM", timeOut: "05:00 PM", timeInMs: 1743984000000, timeOutMs: 1744016400000, breakMins: "60", status: "On Time", duration: "8h",     flagged: false, adminNote: "" },
+  ],
+  4: [
+    { id: "a401", date: "2026-04-10", timeIn: "08:00 AM", timeOut: "05:00 PM", timeInMs: 1744243200000, timeOutMs: 1744275600000, breakMins: "60", status: "On Time", duration: "8h",     flagged: false, adminNote: "" },
+    { id: "a402", date: "2026-04-09", timeIn: "08:00 AM", timeOut: "05:00 PM", timeInMs: 1744156800000, timeOutMs: 1744189200000, breakMins: "60", status: "On Time", duration: "8h",     flagged: false, adminNote: "" },
+  ],
+  5: [
+    { id: "a501", date: "2026-04-10", timeIn: "08:00 AM", timeOut: "05:00 PM", timeInMs: 1744243200000, timeOutMs: 1744275600000, breakMins: "60", status: "On Time", duration: "8h",     flagged: false, adminNote: "" },
+    { id: "a502", date: "2026-04-09", timeIn: "08:00 AM", timeOut: "05:00 PM", timeInMs: 1744156800000, timeOutMs: 1744189200000, breakMins: "60", status: "On Time", duration: "8h",     flagged: false, adminNote: "" },
+    { id: "a503", date: "2026-04-08", timeIn: "08:00 AM", timeOut: "05:00 PM", timeInMs: 1744070400000, timeOutMs: 1744102800000, breakMins: "60", status: "On Time", duration: "8h",     flagged: false, adminNote: "" },
+  ],
+  6: [
+    { id: "a601", date: "2026-04-10", timeIn: "08:00 AM", timeOut: "05:00 PM", timeInMs: 1744243200000, timeOutMs: 1744275600000, breakMins: "60", status: "On Time", duration: "8h",     flagged: false, adminNote: "" },
+    { id: "a602", date: "2026-04-08", timeIn: "08:25 AM", timeOut: "05:00 PM", timeInMs: 1744072500000, timeOutMs: 1744102800000, breakMins: "60", status: "Late",    duration: "7h 35m", flagged: true,  adminNote: "Late — no prior notice." },
+  ],
+};
+
+const interns            = realInterns.length > 0 ? realInterns : MOCK_INTERNS;
+const getInternAttendance = (id) => realInterns.length > 0 ? realGetAttendance(id) : (MOCK_ATTENDANCE[id] || []);
   const [selectedInternId, setSelectedInternId] = useState(interns[0]?.id ?? null);
   const [calYear,  setCalYear]  = useState(new Date().getFullYear());
   const [calMonth, setCalMonth] = useState(new Date().getMonth());

@@ -4,16 +4,51 @@ import "./AdminInterns.css";
 import { User, CheckCircle, XCircle, Pencil, Save, X, ChevronDown, ChevronUp } from "lucide-react";
 
 const DEPARTMENTS = [
-  "News & Current Affairs", "Production", "Digital Media",
-  "Engineering", "Finance", "Human Resources", "Marketing", "Legal",
+  "Transmitter", "TV Maintenance", "Uplink", "TOC", "Studio", "IT", "OB Van",
 ];
 
+const DEPT_SUPERVISORS = {
+  "Transmitter":    "Ricky Galeza",
+  "TV Maintenance": "Darius Dela Cruz",
+  "Uplink":         "Joselito Tanggol",
+  "TOC":            "Narciso Rodriguez",
+  "Studio":         "Aljune Urrutia",
+  "IT":             "Cyril Collao",
+  "OB Van":         "Lyndon Valderama",
+};
+
 export default function AdminInterns() {
-  const { interns, approveIntern, adminUpdateIntern } = useApp();
+  const { interns: realInterns, approveIntern, adminUpdateIntern } = useApp();
+
+const MOCK_INTERNS = [
+  { id: 1, name: "Maria Santos",    email: "maria@email.com",  phone: "09171234567", address: "Quezon City",    school: "UP Diliman",       course: "BS Computer Science",         guardianContact: "09181234567", department: "IT",             supervisor: "Cyril Collao",      startDate: "2026-01-06", endDate: "2026-04-30", requiredHours: 486, photo: null, status: "active",  approved: true,  registeredAt: "01/06/2026" },
+  { id: 2, name: "Jose Reyes",      email: "jose@email.com",   phone: "09182345678", address: "Makati City",    school: "DLSU Manila",      course: "BS Information Technology",   guardianContact: "09192345678", department: "Transmitter",    supervisor: "Ricky Galeza",      startDate: "2026-01-06", endDate: "2026-04-30", requiredHours: 486, photo: null, status: "active",  approved: true,  registeredAt: "01/06/2026" },
+  { id: 3, name: "Ana Dela Cruz",   email: "ana@email.com",    phone: "09193456789", address: "Pasig City",     school: "Ateneo de Manila", course: "BS Electronics Engineering",  guardianContact: "09203456789", department: "Studio",         supervisor: "Aljune Urrutia",    startDate: "2026-01-13", endDate: "2026-05-07", requiredHours: 486, photo: null, status: "active",  approved: true,  registeredAt: "01/13/2026" },
+  { id: 4, name: "Carlo Mendoza",   email: "carlo@email.com",  phone: "09204567890", address: "Caloocan City",  school: "PLM Manila",       course: "BS Computer Engineering",     guardianContact: "09214567890", department: "TOC",            supervisor: "Narciso Rodriguez", startDate: "2026-01-13", endDate: "2026-05-07", requiredHours: 486, photo: null, status: "active",  approved: true,  registeredAt: "01/13/2026" },
+  { id: 5, name: "Nina Villanueva", email: "nina@email.com",   phone: "09215678901", address: "Mandaluyong",    school: "FEU Manila",       course: "BS Information Systems",      guardianContact: "09225678901", department: "Uplink",         supervisor: "Joselito Tanggol",  startDate: "2026-02-03", endDate: "2026-05-28", requiredHours: 486, photo: null, status: "active",  approved: true,  registeredAt: "02/03/2026" },
+  { id: 6, name: "Ramon Garcia",    email: "ramon@email.com",  phone: "09226789012", address: "Marikina City",  school: "TUP Manila",       course: "BS Electronics Technology",   guardianContact: "09236789012", department: "TV Maintenance", supervisor: "Darius Dela Cruz",  startDate: "2026-02-03", endDate: "2026-05-28", requiredHours: 486, photo: null, status: "active",  approved: true,  registeredAt: "02/03/2026" },
+  { id: 7, name: "Lea Bautista",    email: "lea@email.com",    phone: "09237890123", address: "Taguig City",    school: "UST Manila",       course: "BS Communication Technology", guardianContact: "09247890123", department: "OB Van",         supervisor: "Lyndon Valderama",  startDate: "2026-02-10", endDate: "2026-06-04", requiredHours: 486, photo: null, status: "pending", approved: false, registeredAt: "02/10/2026" },
+  { id: 8, name: "Marco Reyes",     email: "marco@email.com",  phone: "09248901234", address: "Las Piñas City", school: "PUP Manila",       course: "BS Electrical Engineering",   guardianContact: "09258901234", department: "IT",             supervisor: "Cyril Collao",      startDate: "2026-02-10", endDate: "2026-06-04", requiredHours: 486, photo: null, status: "pending", approved: false, registeredAt: "02/10/2026" },
+];
+
+const [mockInterns, setMockInterns] = useState(MOCK_INTERNS);
+const interns = realInterns.length > 0 ? realInterns : mockInterns;
+
+const handleApprove = (internId) => {
+  if (realInterns.length > 0) {
+    approveIntern(internId);
+  } else {
+    setMockInterns(prev =>
+      prev.map(i => i.id === internId ? { ...i, approved: true, status: "active" } : i)
+    );
+  }
+};
   const [editId,   setEditId]   = useState(null);
   const [editForm, setEditForm] = useState({});
   const [expanded, setExpanded] = useState(null);
   const [filter,   setFilter]   = useState("all");
+  const [confirmApprove, setConfirmApprove] = useState(null);
+  const [confirmSave,    setConfirmSave]    = useState(null);
 
   const filtered = interns.filter(i => {
     if (filter === "all")      return true;
@@ -25,16 +60,19 @@ export default function AdminInterns() {
   const startEdit = (intern) => {
     setEditId(intern.id);
     setEditForm({
-      department:    intern.department    || "",
-      supervisor:    intern.supervisor    || "",
-      startDate:     intern.startDate     || "",
-      endDate:       intern.endDate       || "",
-      requiredHours: intern.requiredHours || "",
+      department: intern.department || "",
+      supervisor: intern.supervisor || "",
     });
   };
 
   const saveEdit = (internId) => {
-    adminUpdateIntern(internId, editForm);
+    if (realInterns.length > 0) {
+      adminUpdateIntern(internId, editForm);
+    } else {
+      setMockInterns(prev =>
+        prev.map(i => i.id === internId ? { ...i, ...editForm } : i)
+      );
+    }
     setEditId(null);
   };
 
@@ -90,7 +128,7 @@ export default function AdminInterns() {
                     <button
                       className="adm-btn adm-btn-gold"
                       style={{ fontSize: "12px", padding: "6px 14px" }}
-                      onClick={() => approveIntern(intern.id)}
+                      onClick={() => setConfirmApprove(intern)}
                     >
                       <CheckCircle size={13} /> Approve
                     </button>
@@ -143,53 +181,46 @@ export default function AdminInterns() {
                   {editId === intern.id && (
                     <div className="adm-int-edit-form">
                       <p className="adm-int-edit-hint">
-                        Fields below are admin-assigned. Intern cannot edit these.
+                        Assign the intern to a department. Supervisor is automatically filled based on the selected department.
                       </p>
                       <div className="adm-int-edit-grid">
                         <div className="adm-field">
-                          <label>Department</label>
+                          <label>Assign Department</label>
                           <select
                             value={editForm.department}
-                            onChange={e => setEditForm(f => ({ ...f, department: e.target.value }))}
+                            onChange={e => {
+                              const dept = e.target.value;
+                              setEditForm(f => ({
+                                ...f,
+                                department: dept,
+                                supervisor: DEPT_SUPERVISORS[dept] || "",
+                              }));
+                            }}
                           >
-                            <option value="">— Select —</option>
-                            {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+                            <option value="">— Select Department —</option>
+                            {DEPARTMENTS.map(d => (
+                              <option key={d} value={d}>{d}</option>
+                            ))}
                           </select>
                         </div>
                         <div className="adm-field">
                           <label>Supervisor</label>
-                          <input
-                            type="text"
-                            value={editForm.supervisor}
-                            placeholder="e.g. Ms. Reyes"
-                            onChange={e => setEditForm(f => ({ ...f, supervisor: e.target.value }))}
-                          />
-                        </div>
-                        <div className="adm-field">
-                          <label>Start Date</label>
-                          <input
-                            type="date"
-                            value={editForm.startDate}
-                            onChange={e => setEditForm(f => ({ ...f, startDate: e.target.value }))}
-                          />
-                        </div>
-                        <div className="adm-field">
-                          <label>End Date</label>
-                          <input
-                            type="date"
-                            value={editForm.endDate}
-                            min={editForm.startDate || undefined}
-                            onChange={e => setEditForm(f => ({ ...f, endDate: e.target.value }))}
-                          />
-                        </div>
-                        <div className="adm-field">
-                          <label>Required Hours</label>
-                          <input
-                            type="number"
-                            value={editForm.requiredHours}
-                            placeholder="e.g. 300"
-                            onChange={e => setEditForm(f => ({ ...f, requiredHours: e.target.value }))}
-                          />
+                          <div style={{
+                            display: "flex", alignItems: "center", gap: "10px",
+                            padding: "10px 14px", borderRadius: "8px",
+                            border: "1.5px solid #e2e6f0", background: "#f8fafc",
+                            fontSize: "13px", color: editForm.supervisor ? "#0b1d45" : "#9ca3af",
+                          }}>
+                            {editForm.supervisor
+                              ? <>
+                                  <div style={{ width: 28, height: 28, borderRadius: "50%", background: "linear-gradient(135deg,#0b1d45,#1a2f6b)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
+                                    {editForm.supervisor.charAt(0)}
+                                  </div>
+                                  <span style={{ fontWeight: 600 }}>{editForm.supervisor}</span>
+                                </>
+                              : <span>— Auto-filled when department is selected —</span>
+                            }
+                          </div>
                         </div>
                       </div>
                       <div className="adm-int-edit-actions">
@@ -201,7 +232,7 @@ export default function AdminInterns() {
                         </button>
                         <button
                           className="adm-btn adm-btn-primary"
-                          onClick={() => saveEdit(intern.id)}
+                          onClick={() => setConfirmSave(intern.id)}
                         >
                           <Save size={13} /> Save Changes
                         </button>
@@ -216,6 +247,60 @@ export default function AdminInterns() {
           ))}
         </div>
       )}
+    {/* Confirm Approve Modal */}
+      {confirmApprove && (
+        <div className="adm-modal-backdrop" onClick={() => setConfirmApprove(null)}>
+          <div className="adm-modal" onClick={e => e.stopPropagation()}>
+            <div className="adm-modal-icon" style={{ background: "#e8f5e9" }}>
+              <CheckCircle size={22} style={{ color: "#15803d" }} />
+            </div>
+            <h3>Approve Intern</h3>
+            <p style={{ fontSize: "13px", color: "#6b7494" }}>
+              Are you sure you want to approve <strong>{confirmApprove.name}</strong>? They will be granted active intern status.
+            </p>
+            <div className="adm-modal-actions" style={{ marginTop: "20px" }}>
+              <button className="adm-modal-cancel" onClick={() => setConfirmApprove(null)}>
+                <X size={13} /> Cancel
+              </button>
+              <button
+                className="adm-modal-confirm"
+                style={{ background: "linear-gradient(135deg,#15803d,#16a34a)", color: "#fff", display: "flex", alignItems: "center", gap: "6px" }}
+                onClick={() => { handleApprove(confirmApprove.id); setConfirmApprove(null); }}
+              >
+                <CheckCircle size={13} /> Yes, Approve
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Save Modal */}
+      {confirmSave && (
+        <div className="adm-modal-backdrop" onClick={() => setConfirmSave(null)}>
+          <div className="adm-modal" onClick={e => e.stopPropagation()}>
+            <div className="adm-modal-icon" style={{ background: "#e8f0fe" }}>
+              <Save size={22} style={{ color: "#0b1d45" }} />
+            </div>
+            <h3>Save Changes</h3>
+            <p style={{ fontSize: "13px", color: "#6b7494" }}>
+              Are you sure you want to save the changes to this intern's details?
+            </p>
+            <div className="adm-modal-actions" style={{ marginTop: "20px" }}>
+              <button className="adm-modal-cancel" onClick={() => setConfirmSave(null)}>
+                <X size={13} /> Cancel
+              </button>
+              <button
+                className="adm-modal-confirm"
+                style={{ background: "linear-gradient(135deg,#0b1d45,#1a2f6b)", color: "#fff", display: "flex", alignItems: "center", gap: "6px" }}
+                onClick={() => { saveEdit(confirmSave); setConfirmSave(null); }}
+              >
+                <Save size={13} /> Yes, Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
